@@ -1,7 +1,8 @@
 [requires]
-spdlog/1.5.0
+
+nlohmann_json/3.7.3
+
 gtest/1.10.0
-benchmark/1.5.0
 
 [generators]
 cmake_find_package_multi

@@ -237,3 +237,5 @@ shader-error.txt
 
 .notes.txt
 *.notes.txt
+/.idea/
+/cmake-build-*/

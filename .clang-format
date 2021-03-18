@@ -1,28 +1,28 @@
 ﻿---
 BasedOnStyle: Microsoft
-AccessModifierOffset: '-4'
+AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
-AlignConsecutiveMacros: 'true'
-AlignOperands: 'true'
-AlignTrailingComments: 'true'
-AllowAllArgumentsOnNextLine: 'true'
-AllowAllConstructorInitializersOnNextLine: 'true'
-AllowShortBlocksOnASingleLine: 'true'
-AllowShortCaseLabelsOnASingleLine: 'true'
+#AlignConsecutiveMacros: 'true'
+AlignOperands: true
+AlignTrailingComments: true
+#AllowAllArgumentsOnNextLine: 'true'
+#AllowAllConstructorInitializersOnNextLine: 'true'
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: Always
-AllowShortLambdasOnASingleLine: All
-AllowShortLoopsOnASingleLine: 'true'
+#AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: 'true'
+AlwaysBreakBeforeMultilineStrings: true
 AlwaysBreakTemplateDeclarations: MultiLine
-BinPackArguments: 'false'
-BinPackParameters: 'true'
+BinPackArguments: false
+BinPackParameters: true
 BreakConstructorInitializers: AfterColon
-ColumnLimit: '160'
-ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
-Cpp11BracedListStyle: 'false'
+ColumnLimit: 160
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+Cpp11BracedListStyle: false
 IncludeBlocks: Regroup
 NamespaceIndentation: All
 PointerAlignment: Middle
@@ -40,10 +40,5 @@ IncludeCategories:
 IncludeIsMainRegex: '(Test)?$'
 IndentCaseLabels: true
 IndentPPDirectives: AfterHash
-KeepEmptyLinesAtTheStartOfBlocks: 'true'
-#StatementMacros: 
-#  - 'UNUSED'
-#  - 'PERSISTENT_DECL'
-#  - 'PERSISTENT_IMPL'
-#  - 'SERIALIZE'
+KeepEmptyLinesAtTheStartOfBlocks: true
 ...

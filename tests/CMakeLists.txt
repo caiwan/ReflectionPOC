@@ -2,7 +2,6 @@ include(CTest)
 enable_testing()
 
 find_package(GTest CONFIG)
-find_package(spdlog CONFIG)
 
 file(GLOB_RECURSE SOURCE_FILES *.cpp)
 file(GLOB_RECURSE HEADER_FILES *.h)
@@ -17,5 +16,4 @@ add_test(NAME UnitTests
 target_link_libraries(UnitTests PUBLIC
     Reflection 
     GTest::GTest
-    spdlog::spdlog
 )
