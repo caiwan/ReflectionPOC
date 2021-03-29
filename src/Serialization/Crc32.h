@@ -7,8 +7,10 @@ namespace Grafkit::Utils
 {
 	using Checksum = uint32_t;
 
+	static constexpr Checksum initialChecksum = 0xFFFFFFFF;
+
 	// CRC32 Table (zlib polynomial)
-	static constexpr uint32_t crcTable[256] = {
+	static constexpr Checksum crcTable[256] = {
 		// clang-format off
 		0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
 		0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
@@ -84,7 +86,7 @@ namespace Grafkit::Utils
 
 	template <char... Chars> using Crc32 = Crc32Impl<0xFFFFFFFF, Chars...>;
 
-	constexpr Checksum Crc32Rec(const char * s, const Checksum crc = 0xFFFFFFFF) noexcept
+	constexpr Checksum Crc32Rec(const char * s, const Checksum crc = initialChecksum) noexcept
 	{
 		return *s == 0 ? crc ^ 0xFFFFFFFF : Crc32Rec(s + 1, crcTable[static_cast<unsigned char>(crc) ^ static_cast<unsigned char>(*s)] ^ (crc >> 8));
 	}

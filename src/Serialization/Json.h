@@ -70,7 +70,7 @@ namespace Grafkit
 				// --- The rest of the stuff which has reflection data attached
 				else
 				{
-					constexpr auto checksum = Utils::Signature::SignatureString<Type>::CalcChecksum();
+					constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 					jsonNode = {};
 					jsonNode["_checksum"] = checksum;
 
@@ -169,7 +169,7 @@ namespace Grafkit
 				// -- The rest of the stuff which has reflection data attached
 				else
 				{
-					constexpr auto checksum = Utils::Signature::SignatureString<Type>::CalcChecksum();
+					constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 					Utils::Checksum readChecksum = jsonNode["_checksum"].get<Utils::Checksum>();
 
 					if (checksum != readChecksum) { throw std::runtime_error("Checksum does not match"); }

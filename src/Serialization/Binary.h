@@ -79,7 +79,7 @@ namespace Grafkit::Serializer
 			// --- The rest of the stuff which has reflection data attached
 			else
 			{
-				constexpr auto checksum = Utils::Signature::SignatureString<Type>::CalcChecksum();
+				constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 				Write(checksum);
 
 				refl::util::for_each(refl::reflect(value).members, [&](auto member) {
@@ -207,7 +207,10 @@ namespace Grafkit::Serializer
 			// -- The rest of the stuff which has reflection data attached
 			else
 			{
-				constexpr auto checksum = Utils::Signature::SignatureString<Type>::CalcChecksum();
+				constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
+
+
+
 				Utils::Checksum readChecksum = 0;
 				Read(readChecksum);
 

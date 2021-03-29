@@ -347,21 +347,33 @@ namespace Grafkit
 #undef GK_CREATE_TYPE_NAME_RESOLVE_STL_2
 
 		// ---
-		template <typename Type> struct SignatureString
+		template <typename MemberType> static constexpr auto MakeMemberLine(const MemberType & member)
 		{
-			static std::string CalcString()
-			{
-				std::string res;
-				refl::util::for_each(refl::reflect<Type>().members, [&res](auto member) {
-					using FieldType = typename decltype(member)::value_type;
-					res += type_name<FieldType>::value.str() + " " + member.name.str() + "; ";
-				});
-				if (res.back() == ' ') res.pop_back(); // Remove trailing space
-				return res;
-			};
+			return type_name<MemberType::value_type>::value + refl::make_const_string(' ') + member.name + refl::make_const_string("; ");
+		}
 
-			static constexpr Checksum CalcChecksum() { return { 0 }; }
+		template <typename Type> static constexpr auto CalcString()
+		{
+			return refl::util::accumulate(
+			    refl::reflect<Type>().members,
+			    [](const auto accumulated, const auto member) { return accumulated + MakeMemberLine(member); },
+			    refl::make_const_string());
+			// TODO: Remove trailing space
 		};
+
+		template <typename MemberType> static constexpr Checksum ChecksumMakeMemberLine(const MemberType & member, const Checksum & checksum)
+		{
+			//return Crc32Rec("; ", Crc32Rec(member.name.data, Crc32Rec(" ", Crc32Rec(type_name<MemberType::value_type>::value.data, checksum))));
+			return Crc32Rec("; ", Crc32Rec(member.name.data, Crc32Rec(" ", checksum)));
+		}
+
+		template <typename Type> static constexpr Checksum CalcChecksum()
+		{
+			return refl::util::accumulate(
+			    refl::reflect<Type>().members,
+			    [](const auto checksum, const auto member) { return ChecksumMakeMemberLine(member, checksum); },
+			    initialChecksum);
+		}
 
 	} // namespace Utils::Signature
 } // namespace Grafkit
