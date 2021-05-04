@@ -349,6 +349,7 @@ namespace Grafkit
 		// ---
 		template <typename MemberType> static constexpr auto MakeMemberLine(const MemberType & member)
 		{
+			// TODO: had_value_type
 			return type_name<MemberType::value_type>::value + refl::make_const_string(' ') + member.name + refl::make_const_string("; ");
 		}
 
@@ -361,18 +362,25 @@ namespace Grafkit
 			// TODO: Remove trailing space
 		};
 
-		template <typename MemberType> static constexpr Checksum ChecksumMakeMemberLine(const MemberType & member, const Checksum & checksum)
+		// Add member name?
+		template <typename MemberType, typename NameType>
+		static constexpr Checksum ChecksumMakeMemberLine(const MemberType & member, const NameType & name, const Checksum & checksum)
 		{
-			//return Crc32Rec("; ", Crc32Rec(member.name.data, Crc32Rec(" ", Crc32Rec(type_name<MemberType::value_type>::value.data, checksum))));
-			return Crc32Rec("; ", Crc32Rec(member.name.data, Crc32Rec(" ", checksum)));
+			return Crc32Rec("; ", Crc32Rec(name.data, Crc32Rec(" ", Crc32Rec(type_name<MemberType>::value.data, checksum))));
 		}
 
 		template <typename Type> static constexpr Checksum CalcChecksum()
 		{
-			return refl::util::accumulate(
-			    refl::reflect<Type>().members,
-			    [](const auto checksum, const auto member) { return ChecksumMakeMemberLine(member, checksum); },
-			    initialChecksum);
+			//return refl::util::accumulate(
+			//    refl::reflect<Type>().members,
+			//    [](const auto checksum, const auto member) {
+			//	    return
+
+			//	        0;
+			//	    // ChecksumMakeMemberLine(decltype(member)::value_type{}, member.name ,checksum);
+			//    },
+			//    initialChecksum);
+			return Checksum(Checksum::initialChecksum);
 		}
 
 	} // namespace Utils::Signature

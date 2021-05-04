@@ -1,8 +1,32 @@
 #include <Serialization/Crc32.h>
+#include <gtest/gtest.h>
 
 // This tests if Crc32 could be compiled as constexpr
 
-static_assert("Hello"_crc32 == Grafkit::Utils::Crc32<'H', 'e', 'l', 'l', 'o'>::value, "CRC32 values don't match");
-static_assert("0"_crc32 == Grafkit::Utils::Crc32<'0'>::value, "CRC32 values don't match");
-static_assert(""_crc32 == Grafkit::Utils::Crc32<>::value, "CRC32 values don't match");
+// see the crc32.ipynb
+constexpr uint32_t crcZero = 0x0ul;
+constexpr uint32_t crcHelloWorld = 2499634191UL;
 
+static_assert(Grafkit::Utils::Checksum() == crcZero);
+static_assert(Grafkit::Utils::Checksum("\0") == crcZero);
+static_assert(Grafkit::Utils::Checksum("\0\0") == crcZero);
+static_assert(Grafkit::Utils::Checksum("\0\0\0") == crcZero);
+
+// Reference CRC
+
+TEST(Checksum, Checksum)
+{
+	ASSERT_EQ(uint32_t(Grafkit::Utils::Checksum()), crcZero);
+	ASSERT_EQ(uint32_t(Grafkit::Utils::Checksum("\0")), crcZero);
+	ASSERT_EQ(uint32_t(Grafkit::Utils::Checksum("HelloWorld")), crcHelloWorld);
+}
+
+TEST(Checksum, Concat)
+{
+	const auto a = "Hello";
+	const auto b = "World";
+	const auto z = "\0\0\0\0\0";
+
+	const auto crcA = Grafkit::Utils::Checksum(a, 5);
+	const auto crcAB = Grafkit::Utils::Checksum(b, 5);
+}

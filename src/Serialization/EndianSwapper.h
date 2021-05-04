@@ -5,17 +5,40 @@
 
 namespace Grafkit::EndianSwapper
 {
+	namespace Endian
+	{
+		namespace Impl // Private
+		{
+			static constexpr std::uint32_t little{ 0x41424344u };
+			static constexpr std::uint32_t big{ 0x44434241u };
+			static constexpr std::uint32_t native{ 'ABCD' };
+		} // namespace Impl
+
+		// Public
+		enum class Type : size_t
+		{
+			Unknown,
+			Little,
+			Big
+		};
+
+		// Compare
+		static constexpr bool isLittle = Impl::native == Impl::little;
+		static constexpr bool isBig = Impl::native == Impl::big;
+		static constexpr bool isUnknown = isLittle == isBig;
+
+		// Endian type on current platform
+		static constexpr Type nativeType = isLittle ? Type::Little : isBig ? Type::Big : Type::Unknown;
+
+		static_assert(!isUnknown, "Error: Unsupported endian!");
+	} // namespace Endian
+
 	class SwapByteBase
 	{
 	public:
-		// TODO Can this be constexpr?
-		static inline bool ShouldSwap()
-		{
-			static const uint16_t swapTest = 1;
-			return (*((char *)&swapTest) == 1);
-		}
+		static constexpr bool ShouldSwap() { return Endian::isBig; }
 
-		static inline void SwapBytes(uint8_t & v1, uint8_t & v2)
+		static void SwapBytes(uint8_t & v1, uint8_t & v2)
 		{
 			uint8_t tmp = v1;
 			v1 = v2;
@@ -40,8 +63,9 @@ namespace Grafkit::EndianSwapper
 	public:
 		static T Swap(T v)
 		{
-			if (ShouldSwap()) return ((uint16_t)v >> 8) | ((uint16_t)v << 8);
-			return v;
+			if constexpr (ShouldSwap()) return ((uint16_t)v >> 8) | ((uint16_t)v << 8);
+			else
+				return v;
 		}
 	};
 
@@ -50,9 +74,10 @@ namespace Grafkit::EndianSwapper
 	public:
 		static T Swap(T v)
 		{
-			if (ShouldSwap())
+			if constexpr (ShouldSwap())
 			{ return (SwapByte<uint16_t, 2>::Swap((uint32_t)v & 0xffff) << 16) | (SwapByte<uint16_t, 2>::Swap(((uint32_t)v & 0xffff0000) >> 16)); }
-			return v;
+			else
+				return v;
 		}
 	};
 
@@ -61,9 +86,10 @@ namespace Grafkit::EndianSwapper
 	public:
 		static T Swap(T v)
 		{
-			if (ShouldSwap())
+			if constexpr (ShouldSwap())
 				return (((uint64_t)SwapByte<uint32_t, 4>::Swap((uint32_t)(v & 0xffffffffull))) << 32) | (SwapByte<uint32_t, 4>::Swap((uint32_t)(v >> 32)));
-			return v;
+			else
+				return v;
 		}
 	};
 
@@ -77,12 +103,13 @@ namespace Grafkit::EndianSwapper
 				uint8_t c[4];
 			};
 			f = v;
-			if (ShouldSwap())
+			if constexpr (ShouldSwap())
 			{
 				SwapBytes(c[0], c[3]);
 				SwapBytes(c[1], c[2]);
 			}
-			return f;
+			else
+				return f;
 		}
 	};
 
@@ -96,14 +123,15 @@ namespace Grafkit::EndianSwapper
 				uint8_t c[8];
 			};
 			f = v;
-			if (ShouldSwap())
+			if constexpr (ShouldSwap())
 			{
 				SwapBytes(c[0], c[7]);
 				SwapBytes(c[1], c[6]);
 				SwapBytes(c[2], c[5]);
 				SwapBytes(c[3], c[4]);
 			}
-			return f;
+			else
+				return f;
 		}
 	};
 } // namespace Grafkit::EndianSwapper
