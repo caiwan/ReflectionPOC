@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <refl.h>
 //
-#include <Serialization/Crc32.h>
+#include <Serialization/Signature.h>
 #include <Serialization/Stream.h>
 
 namespace Grafkit
@@ -41,7 +41,10 @@ namespace Grafkit
 			template <typename Type> void Write(const Type & value, Json & jsonNode) const
 			{
 				// --
-				if constexpr (std::is_arithmetic_v<Type> || Traits::is_string_type_v<Type>) { jsonNode = value; }
+				if constexpr (std::is_arithmetic_v<Type> || Traits::is_string_type_v<Type>)
+				{
+					jsonNode = value;
+				}
 				else if constexpr (std::is_enum_v<Type>)
 				{
 					jsonNode = static_cast<int>(value);
@@ -58,7 +61,10 @@ namespace Grafkit
 				{
 					jsonNode = Json::array();
 					static_assert(Traits::has_size_v<Type>);
-					for (const auto & elem : value) { Write(elem, jsonNode.emplace_back()); }
+					for (const auto & elem : value)
+					{
+						Write(elem, jsonNode.emplace_back());
+					}
 				}
 				else if constexpr (Traits::is_pair_v<Type>)
 				{
@@ -68,20 +74,25 @@ namespace Grafkit
 				}
 
 				// --- The rest of the stuff which has reflection data attached
-				else
+				else if constexpr (refl::trait::is_reflectable_v<Type>)
 				{
+
 					constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 					jsonNode = {};
 					jsonNode["_checksum"] = (Utils::Checksum::ChecksumType)checksum;
 
 					refl::util::for_each(refl::reflect(value).members, [&](auto member) {
-						if constexpr (Traits::is_reflectable(member))
+						if constexpr (Traits::is_reflectable_field(member))
 						{
 							const auto & memberValue = member(value);
 							jsonNode[member.name.c_str()] = {};
 							Write(memberValue, jsonNode[member.name.c_str()]);
 						}
 					});
+				}
+				else
+				{
+					// TODO Unsupported type
 				}
 			}
 
@@ -111,7 +122,10 @@ namespace Grafkit
 			template <typename Type> void Read(Type & value, const Json & jsonNode)
 			{
 				// ---
-				if constexpr (std::is_arithmetic_v<Type> || Traits::is_string_type_v<Type>) { value = jsonNode.get<Type>(); }
+				if constexpr (std::is_arithmetic_v<Type> || Traits::is_string_type_v<Type>)
+				{
+					value = jsonNode.get<Type>();
+				}
 				else if constexpr (std::is_enum_v<Type>)
 				{
 					value = static_cast<Type>(jsonNode.get<int>());
@@ -139,7 +153,10 @@ namespace Grafkit
 						ValueType readValue = {};
 						Read(readValue, jsonNode.at(i));
 
-						if constexpr (Traits::has_push_back_v<Type, ValueType>) { value.push_back(std::move(readValue)); }
+						if constexpr (Traits::has_push_back_v<Type, ValueType>)
+						{
+							value.push_back(std::move(readValue));
+						}
 						else if constexpr (Traits::has_insert_v<Type, ValueType>)
 						{
 							value.insert(std::move(readValue));
@@ -167,20 +184,27 @@ namespace Grafkit
 				}
 
 				// -- The rest of the stuff which has reflection data attached
-				else
+				else if constexpr (refl::trait::is_reflectable_v<Type>)
 				{
 					constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 					Utils::Checksum readChecksum(jsonNode["_checksum"].get<Utils::Checksum::ChecksumType>());
 
-					if (checksum != readChecksum) { throw std::runtime_error("Checksum does not match"); }
+					if (checksum != readChecksum)
+					{
+						throw std::runtime_error("Checksum does not match");
+					}
 
 					refl::util::for_each(refl::reflect(value).members, [&](auto member) {
-						if constexpr (Traits::is_reflectable(member))
+						if constexpr (Traits::is_reflectable_field(member))
 						{
 							auto & memberValue = member(value);
 							Read(memberValue, jsonNode[member.name.c_str()]);
 						}
 					});
+				}
+				else
+				{
+					// TODO Unsupported type
 				}
 			}
 

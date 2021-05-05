@@ -39,7 +39,7 @@ struct Line
 	Point start = {};
 	Point end = {};
 
-	[[nodiscard]] float length() const { return Point{ end.x - start.x, end.y - start.y }.magnitude(); }
+	[[nodiscard]] float length() const { return Point{end.x - start.x, end.y - start.y}.magnitude(); }
 
 	bool operator==(const Line & rhs) const { return start == rhs.start && end == rhs.end; }
 	bool operator!=(const Line & rhs) const { return !(rhs == *this); }
@@ -58,7 +58,7 @@ struct ValidateBinarySerializer
 	template <class T> void VerifySerialization(const T & testValue)
 	{
 		std::stringstream stringstream;
-		Serializer serializer(Grafkit::Stream<std::stringstream>{ stringstream });
+		Serializer serializer(Grafkit::Stream<std::stringstream>{stringstream});
 		T readValue{};
 		serializer << testValue;
 		serializer >> readValue;
@@ -67,7 +67,7 @@ struct ValidateBinarySerializer
 	template <class T, size_t N> void VerifyArraySerialization(T (&testValue)[N])
 	{
 		std::stringstream stringstream;
-		Serializer serializer(Grafkit::Stream<std::stringstream>{ stringstream });
+		Serializer serializer(Grafkit::Stream<std::stringstream>{stringstream});
 
 		T readValue[N] = {};
 
@@ -91,11 +91,13 @@ struct ValidateJsonSerializer
 		outSerializer << testValue;
 
 		std::stringstream stringstream;
-		Serializer::DumpJson(Grafkit::Stream<std::stringstream>{ stringstream }, outJson);
+		Serializer::DumpJson(Grafkit::Stream<std::stringstream>{stringstream}, outJson);
 
-		Json inJson = Serializer::ParseJson(Grafkit::Stream<std::stringstream>{ stringstream });
+		Json inJson = Serializer::ParseJson(Grafkit::Stream<std::stringstream>{stringstream});
 		Serializer inSerializer(inJson);
 
+		//std::cout << outJson.dump() << ' ' << inJson.dump() << '\n';
+		
 		T readValue{};
 
 		inSerializer >> readValue;
@@ -110,9 +112,9 @@ struct ValidateJsonSerializer
 		outSerializer << testValue;
 
 		std::stringstream stringstream;
-		Serializer::DumpJson(Grafkit::Stream<std::stringstream>{ stringstream }, outJson);
+		Serializer::DumpJson(Grafkit::Stream<std::stringstream>{stringstream}, outJson);
 
-		Json inJson = Serializer::ParseJson(Grafkit::Stream<std::stringstream>{ stringstream });
+		Json inJson = Serializer::ParseJson(Grafkit::Stream<std::stringstream>{stringstream});
 		Serializer inSerializer(inJson);
 
 		T readValue[N] = {};
@@ -128,9 +130,9 @@ template <class SerializerValidator> class TestSerialization : public testing::T
 };
 
 typedef testing::Types<
-	//ValidateBinarySerializer,
-ValidateJsonSerializer
-> SerializerTestImplementations;
+	ValidateBinarySerializer,
+	ValidateJsonSerializer>
+	SerializerTestImplementations;
 
 TYPED_TEST_CASE(TestSerialization, SerializerTestImplementations);
 
@@ -156,22 +158,22 @@ TYPED_TEST(TestSerialization, PlainOldData)
 TYPED_TEST(TestSerialization, Array)
 {
 	// Array
-	int ii[] = { 1, 2, 3, 4, 5, 6 };
+	int ii[] = {1, 2, 3, 4, 5, 6};
 	VerifyArraySerialization(ii);
 
 	Point points[] = {
-		{ 1, 2 },
-		{ 3, 4 },
-		{ 5, 6 },
-		{ 7, 8 },
-		{ 9, 10 },
+		{1, 2},
+		{3, 4},
+		{5, 6},
+		{7, 8},
+		{9, 10},
 	};
 
 	VerifyArraySerialization(points);
 
 	Line lines[] = {
-		{ { 1, 2 }, { 3, 4 } },
-		{ { 5, 6 }, { 7, 8 } },
+		{{1, 2}, {3, 4}},
+		{{5, 6}, {7, 8}},
 	};
 
 	VerifyArraySerialization(lines);
@@ -180,8 +182,8 @@ TYPED_TEST(TestSerialization, Array)
 TYPED_TEST(TestSerialization, Struct)
 {
 	// User type
-	VerifySerialization(Point{ 1., 1. });
-	VerifySerialization(Line{ { 2., 2. }, { 1., 1. } });
+	VerifySerialization(Point{1., 1.});
+	VerifySerialization(Line{{2., 2.}, {1., 1.}});
 }
 
 TYPED_TEST(TestSerialization, STLContainers)
@@ -190,20 +192,20 @@ TYPED_TEST(TestSerialization, STLContainers)
 	c.insert(1);
 
 	// STL
-	VerifySerialization(std::vector<int>({ 1, 2, 3, 4, 5 }));
-	VerifySerialization(std::vector<std::string>({ "a", "bb", "ccc", "dddd" }));
-	VerifySerialization(std::deque<int>({ 1, 2, 3, 4, 5 }));
-	VerifySerialization(std::deque<std::string>({ "a", "bb", "ccc", "dddd" }));
-	VerifySerialization(std::list<int>({ 1, 2, 3, 4, 5 }));
-	VerifySerialization(std::list<std::string>({ "a", "bb", "ccc", "dddd" }));
-	VerifySerialization(std::set<int>({ 1, 2, 3, 4, 5 }));
-	VerifySerialization(std::set<std::string>({ "a", "bb", "ccc", "dddd" }));
-	VerifySerialization(std::multiset<int>({ 1, 2, 3, 4, 5 }));
-	VerifySerialization(std::multiset<std::string>({ "a", "bb", "ccc", "dddd" }));
-	VerifySerialization(std::map<int, std::string>({ std::make_pair(1, "a"), std::make_pair(2, "bb") }));
-	VerifySerialization(std::unordered_map<int, std::string>({ std::make_pair(1, "a"), std::make_pair(2, "bb") }));
-	VerifySerialization(std::multimap<int, std::string>({ std::make_pair(1, "a"), std::make_pair(2, "bb") }));
-	VerifySerialization(std::unordered_multimap<int, std::string>({ std::make_pair(1, "a"), std::make_pair(2, "bb") }));
+	VerifySerialization(std::vector<int>({1, 2, 3, 4, 5}));
+	VerifySerialization(std::vector<std::string>({"a", "bb", "ccc", "dddd"}));
+	VerifySerialization(std::deque<int>({1, 2, 3, 4, 5}));
+	VerifySerialization(std::deque<std::string>({"a", "bb", "ccc", "dddd"}));
+	VerifySerialization(std::list<int>({1, 2, 3, 4, 5}));
+	VerifySerialization(std::list<std::string>({"a", "bb", "ccc", "dddd"}));
+	VerifySerialization(std::set<int>({1, 2, 3, 4, 5}));
+	VerifySerialization(std::set<std::string>({"a", "bb", "ccc", "dddd"}));
+	VerifySerialization(std::multiset<int>({1, 2, 3, 4, 5}));
+	VerifySerialization(std::multiset<std::string>({"a", "bb", "ccc", "dddd"}));
+	VerifySerialization(std::map<int, std::string>({std::make_pair(1, "a"), std::make_pair(2, "bb")}));
+	VerifySerialization(std::unordered_map<int, std::string>({std::make_pair(1, "a"), std::make_pair(2, "bb")}));
+	VerifySerialization(std::multimap<int, std::string>({std::make_pair(1, "a"), std::make_pair(2, "bb")}));
+	VerifySerialization(std::unordered_multimap<int, std::string>({std::make_pair(1, "a"), std::make_pair(2, "bb")}));
 }
 
 // TODO ... the rest of the tests

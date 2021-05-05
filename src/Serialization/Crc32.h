@@ -15,11 +15,11 @@ namespace Grafkit::Utils
 
 		static constexpr ChecksumType initialChecksum = 0x0LU;
 		static constexpr ChecksumType checksumMask = 0xffffffffLU;
-		// static constexpr ChecksumType initialChecksumInverted = initialChecksum ^ checksumMask;
 
-		explicit constexpr Checksum(ChecksumType checksum = initialChecksum);
+		explicit constexpr Checksum(ChecksumType checksum = initialChecksum, LengthType length = 0);
 		template <LengthType N> explicit constexpr Checksum(const char (&str)[N]);
 		constexpr Checksum(const char * str, LengthType length);
+		explicit constexpr Checksum(const char c);
 
 		explicit constexpr operator ChecksumType() const { return checksum; }
 
@@ -31,8 +31,9 @@ namespace Grafkit::Utils
 		constexpr bool operator!=(const ChecksumType & other) const { return checksum != other; }
 
 	private:
-		constexpr size_t StripTrailingZero(const char * s, const size_t len) { return len && s[len - 1] == 0 ? len - 1 : len; }
-		
+		static constexpr LengthType StripTrailingZero(const char * s, const LengthType len) { return len && s[len - 1] == 0 ? len - 1 : len; }
+		static constexpr ChecksumType FeedZeroes(const LengthType len, ChecksumType checksum);
+
 		template <LengthType N> static ChecksumType constexpr CalcChecksum(const char (&str)[N], ChecksumType checksum = initialChecksum, LengthType pos = 0);
 		static ChecksumType constexpr CalcChecksum(const char * str, LengthType length, ChecksumType checksum = initialChecksum, LengthType pos = 0);
 
@@ -45,7 +46,9 @@ namespace Grafkit::Utils
 	// https://stackoverflow.com/questions/23122312/crc-calculation-of-a-mostly-static-data-stream/23126768#23126768
 	// and
 	// https://github.com/madler/zlib/blob/master/crc32.c
+	// see crc32.ipynb
 
+	constexpr Checksum::Checksum(const ChecksumType checksum, const LengthType length) : checksum(checksum), length(length) {}
 
 	template <Checksum::LengthType N>
 	constexpr Checksum::Checksum(const char (&str)[N]) : checksum(CalcChecksum(str, StripTrailingZero(str, N))), length(StripTrailingZero(str, N))
@@ -57,9 +60,18 @@ namespace Grafkit::Utils
 	{
 	}
 
-	constexpr Checksum::Checksum(const ChecksumType checksum) : checksum(checksum) {}
+	constexpr Checksum::Checksum(const char c) : checksum(EndianSwapper::Endian::isLittle ? crc_table_b[c] : crc_table_l[c]), length(1) {}
 
-	constexpr Checksum Checksum::operator^(const Checksum & other) const { return Checksum(initialChecksum); }
+	constexpr Checksum Checksum::operator^(const Checksum & other) const
+	{
+		// A ^ len(B) * [0] ^ B
+		return Checksum(FeedZeroes(other.length, checksum) ^ other.checksum, length + other.length);
+	}
+
+	constexpr Checksum::ChecksumType Checksum::FeedZeroes(const LengthType len, const ChecksumType checksum)
+	{
+		return len ? FeedZeroes(len - 1, GetNextCrcState(0, checksum)) : checksum;
+	}
 
 	constexpr Checksum::ChecksumType Checksum::CalcChecksum(const char * str, const LengthType length, const ChecksumType checksum, const LengthType pos)
 	{
@@ -71,12 +83,10 @@ namespace Grafkit::Utils
 		if constexpr (EndianSwapper::Endian::isLittle)
 		{
 			return ((checksum >> 8) & 0x00FFFFFF) ^ crc_table_b[(checksum ^ static_cast<unsigned char>(c)) & 0xff];
-			
 		}
-		else if constexpr (EndianSwapper::Endian::isBig)
+		else // if constexpr (EndianSwapper::Endian::isBig)
 		{
 			return ((checksum << 8) & 0xFFFFFF00) ^ crc_table_l[(checksum ^ static_cast<unsigned char>(c)) & 0xFF];
-
 		}
 	}
 

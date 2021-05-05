@@ -77,18 +77,22 @@ namespace Grafkit::Serializer
 			}
 
 			// --- The rest of the stuff which has reflection data attached
-			else
+			else if constexpr (refl::trait::is_reflectable_v<Type>)
 			{
 				constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 				Write(checksum);
 
 				refl::util::for_each(refl::reflect(value).members, [&](auto member) {
-					if constexpr (Traits::is_reflectable(member))
+					if constexpr (Traits::is_reflectable_field(member))
 					{
 						const auto & memberValue = member(value);
 						Write(memberValue);
 					}
 				});
+			}
+			else
+			{
+				// TODO Unsupported type
 			}
 		}
 
@@ -205,25 +209,26 @@ namespace Grafkit::Serializer
 			}
 
 			// -- The rest of the stuff which has reflection data attached
-			else
+			else if constexpr (refl::trait::is_reflectable_v<Type>)
 			{
 				constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
-
-
-
-				Utils::Checksum readChecksum = 0;
+				Utils::Checksum readChecksum;
 				Read(readChecksum);
 
 				if (checksum != readChecksum) { throw std::runtime_error("Checksum does not match"); }
 
 				refl::util::for_each(refl::reflect(value).members, [&](auto member) {
-					if constexpr (Traits::is_reflectable(member))
+					if constexpr (Traits::is_reflectable_field(member))
 					{
 						// using MemberType = std::remove_reference_t<decltype(member(value))>;
 						auto & memberValue = member(value);
 						Read(memberValue);
 					}
 				});
+			}
+			else
+			{
+				// TODO Unsupported type
 			}
 		}
 

@@ -109,6 +109,8 @@ REFL_END
 
 // TODO: use static_assert here
 
+using Grafkit::Utils::Checksum;
+
 template <typename Type> std::string ReferenceCalcSignature()
 {
 	std::string ret;
@@ -124,72 +126,46 @@ template <typename Type> std::string ReferenceCalcSignature()
 	return ret;
 }
 
-template <typename Type> Grafkit::Utils::Checksum ReferenceCalcChecksum()
+TEST(SignatureTest, CalcSignature)
 {
-	auto checksum = Grafkit::Utils::initialChecksum;
+	constexpr auto simpleStruct = Grafkit::Utils::Signature::CalcString<Point>();
+	const auto simpleStructReference = ReferenceCalcSignature<Point>();
+	ASSERT_STREQ(simpleStructReference.c_str(), simpleStruct.c_str());
+	ASSERT_STREQ("float x; float y; ", simpleStruct.c_str());
 
-	refl::util::for_each(refl::reflect<Type>().members, [&](const auto member) {
-		typedef decltype(member) MemberDescriptorType;
-		using MemberType = MemberDescriptorType::value_type;
+	constexpr auto compositeStruct = Grafkit::Utils::Signature::CalcString<Line>();
+	ASSERT_STREQ("Point p0; Point p1; float w; ", compositeStruct.data);
 
-		checksum = Grafkit::Utils::Crc32Rec(Grafkit::Utils::Signature::type_name<MemberType>::value.data, checksum);
-		checksum = Grafkit::Utils::Crc32Rec(" ", checksum);
-		checksum = Grafkit::Utils::Crc32Rec(member.name.data, checksum);
-		checksum = Grafkit::Utils::Crc32Rec("; ", checksum);
-	});
-	return checksum;
+	constexpr auto baseTypes = Grafkit::Utils::Signature::CalcString<TestingBaseTypes>();
+	ASSERT_STREQ(
+		"bool b; char c; unsigned char uc; short s; unsigned short us; int i; unsigned int ui; long l; long long ll; unsigned long ul; unsigned long long ull; "
+		"float f; double d; std::string str; ",
+		baseTypes.data);
+
+	constexpr auto stlTypes = Grafkit::Utils::Signature::CalcString<TestingSTLTypes>();
+	ASSERT_STREQ(
+		"std::vector<int> vi; std::vector<std::string> vs; std::deque<int> di; std::deque<std::string> ds; std::list<int> li; std::list<std::string> ls; "
+		"std::set<int> si; std::set<std::string> ss; std::multiset<int> msi; std::multiset<std::string> mss; std::map<int, std::string> mis; <unknown> umis; "
+		"std::multimap<int, std::string> mmis; <unknown> ummis; ",
+		stlTypes.data);
 }
 
-TEST(SignatureTest, Signature)
+TEST(SignatureTest, CalcChecksum)
 {
-	//constexpr auto simpleStruct = Grafkit::Utils::Signature::CalcString<Point>();
-	//const auto simpleStructReference = ReferenceCalcSignature<Point>();
-	//ASSERT_STREQ(simpleStructReference.c_str(), simpleStruct.c_str());
-	//ASSERT_STREQ("float x; float y; ", simpleStruct.c_str());
+	const auto simpleStructChecksum = Grafkit::Utils::Signature::CalcChecksum<Point>();
+	const auto simpleStructSgn = ReferenceCalcSignature<Point>();
 
-	// constexpr auto compositeStruct = Grafkit::Utils::Signature::CalcString<Line>();
-	// ASSERT_STREQ("Point p0; Point p1; float w; ", compositeStruct.data);
+	ASSERT_EQ(simpleStructChecksum, Checksum(simpleStructSgn.c_str(), simpleStructSgn.size()));
 
-	// constexpr auto baseTypes = Grafkit::Utils::Signature::CalcString<TestingBaseTypes>();
-	// ASSERT_STREQ(
-	//    "bool b; char c; unsigned char uc; short s; unsigned short us; int i; unsigned int ui; long l; long long ll; unsigned long ul; unsigned long long ull;
-	//    " "float f; double d; std::string str; ", baseTypes.data);
+	const auto compositeStructChecksum = Grafkit::Utils::Signature::CalcChecksum<Line>();
+	const auto compositeStructChk = ReferenceCalcSignature<Line>();
+	ASSERT_EQ(compositeStructChecksum, Checksum(compositeStructChk.c_str(), compositeStructChk.size()));
 
-	// constexpr auto stlTypes = Grafkit::Utils::Signature::CalcString<TestingSTLTypes>();
-	// ASSERT_STREQ(
-	//    "std::vector<int> vi; std::vector<std::string> vs; std::deque<int> di; std::deque<std::string> ds; std::list<int> li; std::list<std::string> ls; "
-	//    "std::set<int> si; std::set<std::string> ss; std::multiset<int> msi; std::multiset<std::string> mss; std::map<int, std::string> mis; <unknown> umis; "
-	//    "std::multimap<int, std::string> mmis; <unknown> ummis; ",
-	//    stlTypes.data);
+	const auto baseTypesChecksum = Grafkit::Utils::Signature::CalcChecksum<TestingBaseTypes>();
+	const auto baseTypesSgn = ReferenceCalcSignature<TestingBaseTypes>();
+	ASSERT_EQ(baseTypesChecksum, Checksum(baseTypesSgn.c_str(), baseTypesSgn.size()));
+
+	const auto stlTypesChecksum = Grafkit::Utils::Signature::CalcChecksum<TestingSTLTypes>();
+	const auto stlTypesSgn = ReferenceCalcSignature<TestingSTLTypes>();
+	ASSERT_EQ(stlTypesChecksum, Checksum(stlTypesSgn.c_str(), stlTypesSgn.size()));
 }
-
-TEST(SignatureTest, Checksum)
-{
-	//constexpr auto simpleStructChecksum = Grafkit::Utils::Signature::CalcChecksum<Point>();
-	//constexpr auto simpleStructSgn = Grafkit::Utils::Signature::CalcString<Point>();
-	//const auto simpleStructReference = ReferenceCalcChecksum<Point>();
-
-	//ASSERT_EQ(Grafkit::Utils::Crc32(simpleStructSgn.data), simpleStructReference) << "Bazdmeg";
-	//ASSERT_EQ(simpleStructReference, simpleStructChecksum) << "BBBB";
-
-	// constexpr auto compositeStructSgn = Grafkit::Utils::Signature::CalcString<Line>();
-	// constexpr auto compositeStructChk = Grafkit::Utils::Signature::CalcChecksum<Line>();
-	// ASSERT_EQ(Grafkit::Utils::Crc32Rec(compositeStructSgn.data), compositeStructChk);
-
-	// constexpr auto baseTypesSgn = Grafkit::Utils::Signature::CalcString<TestingBaseTypes>();
-	// constexpr auto baseTypesChk = Grafkit::Utils::Signature::CalcChecksum<TestingBaseTypes>();
-	// ASSERT_EQ(Grafkit::Utils::Crc32Rec(baseTypesSgn.data), baseTypesChk);
-
-	// constexpr auto stlTypesSgn = Grafkit::Utils::Signature::CalcString<TestingSTLTypes>();
-	// constexpr auto stlTypesChk = Grafkit::Utils::Signature::CalcChecksum<TestingSTLTypes>();
-	// ASSERT_EQ(Grafkit::Utils::Crc32Rec(stlTypesSgn.data), stlTypesChk);
-}
-
-// static_assert(Grafkit::Utils::Crc32Rec("World", Grafkit::Utils::Crc32Rec("Hello")) == "HelloWorld"_crc32);
-
-// This is a sample how the CRC32 tables are generated
-// TODO: create at least a py script to programmatically do that on the fly.
-
-constexpr size_t tableLength = 32;
-
-//TEST(DummyCrc, Combine) { ASSERT_EQ("Hello\0\0\0\0\0\0"_crc32 ^ "World"_crc32, "HelloWorld"_crc32); }

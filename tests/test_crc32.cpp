@@ -25,8 +25,8 @@ TEST(Checksum, Concat)
 {
 	const auto a = "Hello";
 	const auto b = "World";
-	const auto z = "\0\0\0\0\0";
-
 	const auto crcA = Grafkit::Utils::Checksum(a, 5);
-	const auto crcAB = Grafkit::Utils::Checksum(b, 5);
+	const auto crcB = Grafkit::Utils::Checksum(b, 5);
+	const auto crcAB = crcA ^ crcB;
+	ASSERT_EQ(uint32_t(crcAB), crcHelloWorld);
 }
