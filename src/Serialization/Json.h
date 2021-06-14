@@ -77,9 +77,9 @@ namespace Grafkit
 				else if constexpr (refl::trait::is_reflectable_v<Type>)
 				{
 
-					constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
+					const auto checksum = Utils::Checksum();
 					jsonNode = {};
-					jsonNode["_checksum"] = (Utils::Checksum::ChecksumType)checksum;
+					jsonNode["_checksum"] = checksum.value();
 
 					refl::util::for_each(refl::reflect(value).members, [&](auto member) {
 						if constexpr (Traits::is_reflectable_field(member))
@@ -93,6 +93,7 @@ namespace Grafkit
 				else
 				{
 					// TODO Unsupported type
+					throw std::runtime_error("Unsupported type");
 				}
 			}
 
@@ -186,13 +187,10 @@ namespace Grafkit
 				// -- The rest of the stuff which has reflection data attached
 				else if constexpr (refl::trait::is_reflectable_v<Type>)
 				{
-					constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
+					const auto checksum = Utils::Checksum();
 					Utils::Checksum readChecksum(jsonNode["_checksum"].get<Utils::Checksum::ChecksumType>());
 
-					if (checksum != readChecksum)
-					{
-						throw std::runtime_error("Checksum does not match");
-					}
+					if (checksum != readChecksum) throw std::runtime_error("Checksum does not match");
 
 					refl::util::for_each(refl::reflect(value).members, [&](auto member) {
 						if constexpr (Traits::is_reflectable_field(member))
@@ -205,6 +203,7 @@ namespace Grafkit
 				else
 				{
 					// TODO Unsupported type
+					throw std::runtime_error("Unsupported type");
 				}
 			}
 

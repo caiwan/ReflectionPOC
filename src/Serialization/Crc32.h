@@ -21,7 +21,8 @@ namespace Grafkit::Utils
 		constexpr Checksum(const char * str, LengthType length);
 		explicit constexpr Checksum(const char c);
 
-		explicit constexpr operator ChecksumType() const { return checksum; }
+		//explicit constexpr operator ChecksumType() const { return checksum; }
+		constexpr ChecksumType value() const { return checksum; }
 
 		constexpr Checksum operator^(const Checksum & other) const;
 		constexpr bool operator==(const Checksum & other) const { return checksum == other.checksum; }

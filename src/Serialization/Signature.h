@@ -244,11 +244,11 @@ namespace Grafkit
 		/**
 		 *
 		 */
-		// TODO: This has to be renamed to something else 
+		// TODO: This has to be renamed to something else
 		template <typename T> static constexpr bool is_reflectable_field(const T)
 		{
 			return refl::trait::is_field_v<T> && refl::descriptor::is_readable(T({})) && refl::descriptor::is_writable(T({})) ||
-				   refl::trait::is_reflectable_v<T> &&  refl::descriptor::has_attribute<Attributes::Serializable>(T({}));
+				   refl::trait::is_reflectable_v<T> && refl::descriptor::has_attribute<Attributes::Serializable>(T({}));
 		}
 
 	} // namespace Traits
@@ -352,29 +352,32 @@ namespace Grafkit
 		// ---
 		template <typename MemberType> static constexpr auto MakeMemberLine(const MemberType & member)
 		{
-			// TODO: value_type + member_type - use whichever is available 
+			// TODO: value_type + member_type - use whichever is available
 			return type_name<typename MemberType::value_type>::value + refl::make_const_string(' ') + member.name + refl::make_const_string("; ");
 		}
 
 		template <typename Type> static constexpr auto CalcString()
 		{
+			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return refl::descriptor::is_readable(member); });
 			return refl::util::accumulate(
-				refl::reflect<Type>().members, [](const auto accumulated, const auto member) { return accumulated + MakeMemberLine(member); },
-				refl::make_const_string());
+				members, [](const auto accumulated, const auto member) { return accumulated + MakeMemberLine(member); }, refl::make_const_string());
 			// TODO: Remove trailing space
 		};
 
 		// ---
 		template <typename MemberType> static constexpr Checksum MakeMemberChecksum(const MemberType & member)
 		{
-			// TODO: has_value_type + member_type - use whichever is available 
-			return Checksum(type_name<typename MemberType::member_type>::value.data) ^ Checksum(' ') ^ Checksum(member.name.data) ^ Checksum("; ");
+			using type_descriptor = refl::type_descriptor<MemberType>;
+
+			// TODO: has_value_type + member_type - use whichever is available
+			return Checksum(type_name<typename MemberType::value_type>::value.data) ^ Checksum(' ') ^ Checksum(member.name.data) ^ Checksum("; ");
 		}
 
 		template <typename Type> static constexpr Checksum CalcChecksum()
 		{
+			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return refl::descriptor::is_readable(member); });
 			return refl::util::accumulate(
-				refl::reflect<Type>().members, [](const auto checksum, const auto member) { return checksum ^ MakeMemberChecksum(member); }, Checksum());
+				members, [](const auto checksum, const auto member) { return checksum ^ MakeMemberChecksum(member); }, Checksum());
 		}
 
 	} // namespace Utils::Signature

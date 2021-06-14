@@ -126,22 +126,31 @@ template <typename Type> std::string ReferenceCalcSignature()
 	return ret;
 }
 
-TEST(SignatureTest, CalcSignature)
+TEST(SignatureTest, CalcSignature1)
 {
 	constexpr auto simpleStruct = Grafkit::Utils::Signature::CalcString<Point>();
 	const auto simpleStructReference = ReferenceCalcSignature<Point>();
 	ASSERT_STREQ(simpleStructReference.c_str(), simpleStruct.c_str());
 	ASSERT_STREQ("float x; float y; ", simpleStruct.c_str());
+}
 
+TEST(SignatureTest, CalcSignature2)
+{
 	constexpr auto compositeStruct = Grafkit::Utils::Signature::CalcString<Line>();
 	ASSERT_STREQ("Point p0; Point p1; float w; ", compositeStruct.data);
+}
 
+TEST(SignatureTest, CalcSignature3)
+{
 	constexpr auto baseTypes = Grafkit::Utils::Signature::CalcString<TestingBaseTypes>();
 	ASSERT_STREQ(
 		"bool b; char c; unsigned char uc; short s; unsigned short us; int i; unsigned int ui; long l; long long ll; unsigned long ul; unsigned long long ull; "
 		"float f; double d; std::string str; ",
 		baseTypes.data);
+}
 
+TEST(SignatureTest, CalcSignature4)
+{
 	constexpr auto stlTypes = Grafkit::Utils::Signature::CalcString<TestingSTLTypes>();
 	ASSERT_STREQ(
 		"std::vector<int> vi; std::vector<std::string> vs; std::deque<int> di; std::deque<std::string> ds; std::list<int> li; std::list<std::string> ls; "
@@ -150,21 +159,30 @@ TEST(SignatureTest, CalcSignature)
 		stlTypes.data);
 }
 
-TEST(SignatureTest, CalcChecksum)
+TEST(SignatureTest, CalcChecksum1)
 {
 	const auto simpleStructChecksum = Grafkit::Utils::Signature::CalcChecksum<Point>();
 	const auto simpleStructSgn = ReferenceCalcSignature<Point>();
+	const auto simpleStructChkRef = Checksum(simpleStructSgn.c_str(), simpleStructSgn.size());
+	ASSERT_EQ(simpleStructChecksum, simpleStructChkRef);
+}
 
-	ASSERT_EQ(simpleStructChecksum, Checksum(simpleStructSgn.c_str(), simpleStructSgn.size()));
-
+TEST(SignatureTest, CalcChecksum2)
+{
 	const auto compositeStructChecksum = Grafkit::Utils::Signature::CalcChecksum<Line>();
 	const auto compositeStructChk = ReferenceCalcSignature<Line>();
 	ASSERT_EQ(compositeStructChecksum, Checksum(compositeStructChk.c_str(), compositeStructChk.size()));
+}
 
+TEST(SignatureTest, CalcChecksum3)
+{
 	const auto baseTypesChecksum = Grafkit::Utils::Signature::CalcChecksum<TestingBaseTypes>();
 	const auto baseTypesSgn = ReferenceCalcSignature<TestingBaseTypes>();
 	ASSERT_EQ(baseTypesChecksum, Checksum(baseTypesSgn.c_str(), baseTypesSgn.size()));
+}
 
+TEST(SignatureTest, CalcChecksum4)
+{
 	const auto stlTypesChecksum = Grafkit::Utils::Signature::CalcChecksum<TestingSTLTypes>();
 	const auto stlTypesSgn = ReferenceCalcSignature<TestingSTLTypes>();
 	ASSERT_EQ(stlTypesChecksum, Checksum(stlTypesSgn.c_str(), stlTypesSgn.size()));

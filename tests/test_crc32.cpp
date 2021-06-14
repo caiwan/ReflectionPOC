@@ -16,9 +16,9 @@ static_assert(Grafkit::Utils::Checksum("\0\0\0") == crcZero);
 
 TEST(Checksum, Checksum)
 {
-	ASSERT_EQ(uint32_t(Grafkit::Utils::Checksum()), crcZero);
-	ASSERT_EQ(uint32_t(Grafkit::Utils::Checksum("\0")), crcZero);
-	ASSERT_EQ(uint32_t(Grafkit::Utils::Checksum("HelloWorld")), crcHelloWorld);
+	ASSERT_EQ(Grafkit::Utils::Checksum().value(), crcZero);
+	ASSERT_EQ(Grafkit::Utils::Checksum("\0").value(), crcZero);
+	ASSERT_EQ(Grafkit::Utils::Checksum("HelloWorld").value(), crcHelloWorld);
 }
 
 TEST(Checksum, Concat)
@@ -28,5 +28,5 @@ TEST(Checksum, Concat)
 	const auto crcA = Grafkit::Utils::Checksum(a, 5);
 	const auto crcB = Grafkit::Utils::Checksum(b, 5);
 	const auto crcAB = crcA ^ crcB;
-	ASSERT_EQ(uint32_t(crcAB), crcHelloWorld);
+	ASSERT_EQ(crcAB.value(), crcHelloWorld);
 }
