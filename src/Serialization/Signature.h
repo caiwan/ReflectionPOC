@@ -30,7 +30,6 @@ namespace Grafkit
 		 */
 		struct Serializable : refl::attr::usage::field
 		{
-			// TODO: add signature, checkusm maybe?
 		};
 
 		/**
@@ -251,6 +250,8 @@ namespace Grafkit
 				   refl::trait::is_reflectable_v<T> && refl::descriptor::has_attribute<Attributes::Serializable>(T({}));
 		}
 
+		template <typename T> static constexpr bool is_serializable(const T) { return refl::descriptor::has_attribute<Attributes::Serializable>(T({})); }
+
 	} // namespace Traits
 
 	namespace Utils::Signature
@@ -358,7 +359,7 @@ namespace Grafkit
 
 		template <typename Type> static constexpr auto CalcString()
 		{
-			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return refl::descriptor::is_readable(member); });
+			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
 			return refl::util::accumulate(
 				members, [](const auto accumulated, const auto member) { return accumulated + MakeMemberLine(member); }, refl::make_const_string());
 			// TODO: Remove trailing space
@@ -367,15 +368,13 @@ namespace Grafkit
 		// ---
 		template <typename MemberType> static constexpr Checksum MakeMemberChecksum(const MemberType & member)
 		{
-			using type_descriptor = refl::type_descriptor<MemberType>;
-
 			// TODO: has_value_type + member_type - use whichever is available
 			return Checksum(type_name<typename MemberType::value_type>::value.data) ^ Checksum(' ') ^ Checksum(member.name.data) ^ Checksum("; ");
 		}
 
 		template <typename Type> static constexpr Checksum CalcChecksum()
 		{
-			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return refl::descriptor::is_readable(member); });
+			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
 			return refl::util::accumulate(
 				members, [](const auto checksum, const auto member) { return checksum ^ MakeMemberChecksum(member); }, Checksum());
 		}

@@ -68,7 +68,10 @@ namespace Grafkit::Serializer
 				static_assert(Traits::has_size_v<Type> != 0);
 				const auto count = static_cast<SizeType>(value.size());
 				Write(count);
-				for (const auto & elem : value) { Write(elem); }
+				for (const auto & elem : value)
+				{
+					Write(elem);
+				}
 			}
 			else if constexpr (Traits::is_pair_v<Type>)
 			{
@@ -78,21 +81,18 @@ namespace Grafkit::Serializer
 
 			// --- The rest of the stuff which has reflection data attached
 			else if constexpr (refl::trait::is_reflectable_v<Type>)
-			{	
+			{
 				constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 				Write(checksum.value());
 
-				refl::util::for_each(refl::reflect(value).members, [&](auto member) {
-					if constexpr (Traits::is_reflectable_field(member))
-					{
-						const auto & memberValue = member(value);
-						Write(memberValue);
-					}
+				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+				refl::util::for_each(members, [&](auto member) {
+					const auto & memberValue = member(value);
+					Write(memberValue);
 				});
 			}
 			else
 			{
-				// TODO Unsupported type
 				throw std::runtime_error("Unsupported type");
 			}
 		}
@@ -182,7 +182,10 @@ namespace Grafkit::Serializer
 					ValueType readValue = {};
 					Read(readValue);
 
-					if constexpr (Traits::has_push_back_v<Type, ValueType>) { value.push_back(std::move(readValue)); }
+					if constexpr (Traits::has_push_back_v<Type, ValueType>)
+					{
+						value.push_back(std::move(readValue));
+					}
 					else if constexpr (Traits::has_insert_v<Type, ValueType>)
 					{
 						value.insert(std::move(readValue));
@@ -216,20 +219,18 @@ namespace Grafkit::Serializer
 				Utils::Checksum::ChecksumType readChecksum;
 				Read(readChecksum);
 
-				if (checksum.value() != readChecksum) { throw std::runtime_error("Checksum does not match"); }
-
-				refl::util::for_each(refl::reflect(value).members, [&](auto member) {
-					if constexpr (Traits::is_reflectable_field(member))
-					{
-						// using MemberType = std::remove_reference_t<decltype(member(value))>;
-						auto & memberValue = member(value);
-						Read(memberValue);
-					}
+				if (checksum.value() != readChecksum)
+				{
+					throw std::runtime_error("Checksum does not match");
+				}
+				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+				refl::util::for_each(members, [&](auto member) {
+					auto & memberValue = member(value);
+					Read(memberValue);
 				});
 			}
 			else
 			{
-				// TODO Unsupported type
 				throw std::runtime_error("Unsupported type");
 			}
 		}

@@ -81,18 +81,15 @@ namespace Grafkit
 					jsonNode = {};
 					jsonNode["_checksum"] = checksum.value();
 
-					refl::util::for_each(refl::reflect(value).members, [&](auto member) {
-						if constexpr (Traits::is_reflectable_field(member))
-						{
-							const auto & memberValue = member(value);
-							jsonNode[member.name.c_str()] = {};
-							Write(memberValue, jsonNode[member.name.c_str()]);
-						}
+					constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return refl::descriptor::is_readable(member); });
+					refl::util::for_each(members, [&](auto member) {
+						const auto & memberValue = member(value);
+						jsonNode[member.name.c_str()] = {};
+						Write(memberValue, jsonNode[member.name.c_str()]);
 					});
 				}
 				else
 				{
-					// TODO Unsupported type
 					throw std::runtime_error("Unsupported type");
 				}
 			}
@@ -188,21 +185,19 @@ namespace Grafkit
 				else if constexpr (refl::trait::is_reflectable_v<Type>)
 				{
 					const auto checksum = Utils::Checksum();
-					Utils::Checksum readChecksum(jsonNode["_checksum"].get<Utils::Checksum::ChecksumType>());
+					const Utils::Checksum readChecksum(jsonNode["_checksum"].get<Utils::Checksum::ChecksumType>());
 
 					if (checksum != readChecksum) throw std::runtime_error("Checksum does not match");
 
-					refl::util::for_each(refl::reflect(value).members, [&](auto member) {
-						if constexpr (Traits::is_reflectable_field(member))
-						{
-							auto & memberValue = member(value);
-							Read(memberValue, jsonNode[member.name.c_str()]);
-						}
+					constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+
+					refl::util::for_each(members, [&](auto member) {
+						auto & memberValue = member(value);
+						Read(memberValue, jsonNode[member.name.c_str()]);
 					});
 				}
 				else
 				{
-					// TODO Unsupported type
 					throw std::runtime_error("Unsupported type");
 				}
 			}
