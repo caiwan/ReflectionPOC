@@ -4,8 +4,9 @@
 
 using Serializable = Grafkit::Attributes::Serializable;
 using RegisteredType = Grafkit::Attributes::RegisteredType;
+using DynamicObject = Grafkit::Serializer::DynamicObject;
 
-class DummyClass : public Grafkit::Serializer::DynamicObject
+class DummyClass : public DynamicObject
 {
 public:
 	DummyClass() = default;
@@ -45,7 +46,7 @@ DYNAMICS_IMPL(DummyClassInherited)
 
 // ======
 
-class DummyBase : public Grafkit::Serializer::DynamicObject
+class DummyBase : public DynamicObject
 {
 public:
 	virtual int Thing() = 0;
@@ -81,6 +82,16 @@ REFL_END
 DYNAMICS_IMPL(DummyB)
 
 // ======
+
+TEST(Dynamics, DynamicsStore)
+{
+	const auto & dynamics = Grafkit::Serializer::Dynamics::Instance();
+	ASSERT_TRUE(dynamics.Create("DummyClass"));
+	ASSERT_TRUE(dynamics.Create("DummyClassInherited"));
+	ASSERT_TRUE(dynamics.Create("DummyB"));
+	ASSERT_TRUE(dynamics.Create("DummyA"));
+	ASSERT_FALSE(dynamics.Create("Does not exist"));
+}
 
 TEST(Dynamics, Hello0)
 {

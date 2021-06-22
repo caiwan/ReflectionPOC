@@ -49,7 +49,7 @@ namespace Grafkit::Serializer
 			return instance;
 		}
 
-		DynamicObject * Create(const char * className);
+		DynamicObject * Create(const char * className) const;
 
 	protected:
 		void AddCloneable(const char * const & className, const FactoryFunction & factory) { mFactories[className] = factory; }
@@ -71,6 +71,12 @@ namespace Grafkit::Serializer
 			}
 		};
 	};
+
+	inline DynamicObject * Dynamics::Create(const char * className) const
+	{
+		const auto it = mFactories.find(std::string(className));
+		return it != mFactories.end() ? it->second() : nullptr;
+	}
 } // namespace Grafkit::Serializer
 
 #define DYNAMICS_DECL(DYNAMIC_CLASS)                                                                                                                           \
