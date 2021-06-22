@@ -38,7 +38,7 @@ namespace Grafkit
 
 			// ----------------------------------------------------------------------------
 
-			template <typename Type> void Write(const Type & value, Json & jsonNode) 
+			template <typename Type> void Write(const Type & value, Json & jsonNode)
 			{
 				// --
 				if constexpr (std::is_arithmetic_v<Type> || Traits::is_string_type_v<Type>)
@@ -81,7 +81,7 @@ namespace Grafkit
 					jsonNode = {};
 					jsonNode["_checksum"] = checksum.value();
 
-					constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return refl::descriptor::is_readable(member); });
+					constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
 					refl::util::for_each(members, [&](auto member) {
 						const auto & memberValue = member(value);
 						jsonNode[member.name.c_str()] = {};
@@ -94,7 +94,7 @@ namespace Grafkit
 				}
 			}
 
-			template <class Type, size_t N> void Write(const Type (&value)[N], Json & jsonNode) 
+			template <class Type, size_t N> void Write(const Type (&value)[N], Json & jsonNode)
 			{
 				jsonNode = Json::array();
 				for (const auto & elem : value)
@@ -104,7 +104,7 @@ namespace Grafkit
 				}
 			}
 
-			template <class Type, size_t N> void Write(const std::array<Type, N> & value, Json & jsonNode) 
+			template <class Type, size_t N> void Write(const std::array<Type, N> & value, Json & jsonNode)
 			{
 				jsonNode = Json::array();
 				for (const auto & elem : value)
@@ -117,7 +117,7 @@ namespace Grafkit
 			// ----------------------------------------------------------------------------
 
 			// ---
-			template <typename Type> void Read(Type & value, const Json & jsonNode) const 
+			template <typename Type> void Read(Type & value, const Json & jsonNode) const
 			{
 				// ---
 				if constexpr (std::is_arithmetic_v<Type> || Traits::is_string_type_v<Type>)
@@ -189,7 +189,7 @@ namespace Grafkit
 
 					if (checksum != readChecksum) throw std::runtime_error("Checksum does not match");
 
-					constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+					constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
 
 					refl::util::for_each(members, [&](auto member) {
 						auto & memberValue = member(value);
@@ -202,7 +202,7 @@ namespace Grafkit
 				}
 			}
 
-			template <class T, size_t N> void Read(T (&value)[N], const Json & jsonNode) const 
+			template <class T, size_t N> void Read(T (&value)[N], const Json & jsonNode) const
 			{
 				size_t i = 0;
 				for (auto & elem : value)
@@ -212,7 +212,7 @@ namespace Grafkit
 				}
 			}
 
-			template <class T, size_t N> void Read(std::array<T, N> & value, const Json & jsonNode) const 
+			template <class T, size_t N> void Read(std::array<T, N> & value, const Json & jsonNode) const
 			{
 				size_t i = 0;
 				for (auto & elem : value)

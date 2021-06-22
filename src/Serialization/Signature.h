@@ -244,13 +244,15 @@ namespace Grafkit
 		 *
 		 */
 		// TODO: This has to be renamed to something else
-		template <typename T> static constexpr bool is_reflectable_field(const T)
-		{
-			return refl::trait::is_field_v<T> && refl::descriptor::is_readable(T({})) && refl::descriptor::is_writable(T({})) ||
-				   refl::trait::is_reflectable_v<T> && refl::descriptor::has_attribute<Attributes::Serializable>(T({}));
-		}
 
-		template <typename T> static constexpr bool is_serializable(const T) { return refl::descriptor::has_attribute<Attributes::Serializable>(T({})); }
+		template <typename T> static constexpr bool is_field(const T & t) { return refl::descriptor::is_field(t); }
+
+		template <typename T> static constexpr bool is_serializable(const T & t) { return refl::descriptor::has_attribute<Attributes::Serializable>(t); }
+
+		template <typename T> static constexpr bool is_serializable_field(const T & t)
+		{
+			return refl::descriptor::is_readable(t) && Traits::is_field(t) && Traits::is_serializable(t);
+		}
 
 	} // namespace Traits
 
@@ -359,7 +361,7 @@ namespace Grafkit
 
 		template <typename Type> static constexpr auto CalcString()
 		{
-			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_field(member); });
 			return refl::util::accumulate(
 				members, [](const auto accumulated, const auto member) { return accumulated + MakeMemberLine(member); }, refl::make_const_string());
 			// TODO: Remove trailing space
@@ -374,7 +376,7 @@ namespace Grafkit
 
 		template <typename Type> static constexpr Checksum CalcChecksum()
 		{
-			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_field(member); });
 			return refl::util::accumulate(
 				members, [](const auto checksum, const auto member) { return checksum ^ MakeMemberChecksum(member); }, Checksum());
 		}

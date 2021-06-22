@@ -105,7 +105,7 @@ private:                                                                        
 	{                                                                                                                                                          \
 		constexpr auto members = filter(refl::type_descriptor<DYNAMIC_CLASS>::members, [](auto member) { return Grafkit::Traits::is_serializable(member); });  \
 		refl::util::for_each(members, [&](auto member) {                                                                                                       \
-			const auto & memberValue = member(*this);                                                                                                                \
+			const auto & memberValue = member(*this);                                                                                                          \
 			s << memberValue;                                                                                                                                  \
 		});                                                                                                                                                    \
 	}

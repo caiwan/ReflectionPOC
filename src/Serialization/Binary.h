@@ -85,7 +85,7 @@ namespace Grafkit::Serializer
 				constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 				Write(checksum.value());
 
-				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
 				refl::util::for_each(members, [&](auto member) {
 					const auto & memberValue = member(value);
 					Write(memberValue);
@@ -223,7 +223,7 @@ namespace Grafkit::Serializer
 				{
 					throw std::runtime_error("Checksum does not match");
 				}
-				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
 				refl::util::for_each(members, [&](auto member) {
 					auto & memberValue = member(value);
 					Read(memberValue);
