@@ -24,21 +24,21 @@ namespace Grafkit
 			static void DumpJson(IStream & stream, const Json & json);
 
 		protected:
-			template <typename Type> void Write(const Type & value) const { Write(value, json); }
+			template <typename Type> void Write(const Type & value) { Write(value, json); }
 
-			template <class Type, size_t N> void Write(const Type (&value)[N]) const { Write(value, json); }
+			template <class Type, size_t N> void Write(const Type (&value)[N]) { Write(value, json); }
 
-			template <class Type, size_t N> void Write(const std::array<Type, N> & value) const { Write(value, json); }
+			template <class Type, size_t N> void Write(const std::array<Type, N> & value) { Write(value, json); }
 
-			template <typename Type> void Read(Type & value) { Read(value, json); }
+			template <typename Type> void Read(Type & value) const { Read(value, json); }
 
-			template <class Type, size_t N> void Read(Type (&value)[N]) { Read(value, json); }
+			template <class Type, size_t N> void Read(Type (&value)[N]) const { Read(value, json); }
 
-			template <class Type, size_t N> void Read(std::array<Type, N> & value) { Read(value, json); }
+			template <class Type, size_t N> void Read(std::array<Type, N> & value) const { Read(value, json); }
 
 			// ----------------------------------------------------------------------------
 
-			template <typename Type> void Write(const Type & value, Json & jsonNode) const
+			template <typename Type> void Write(const Type & value, Json & jsonNode) 
 			{
 				// --
 				if constexpr (std::is_arithmetic_v<Type> || Traits::is_string_type_v<Type>)
@@ -94,7 +94,7 @@ namespace Grafkit
 				}
 			}
 
-			template <class Type, size_t N> void Write(const Type (&value)[N], Json & jsonNode) const
+			template <class Type, size_t N> void Write(const Type (&value)[N], Json & jsonNode) 
 			{
 				jsonNode = Json::array();
 				for (const auto & elem : value)
@@ -104,7 +104,7 @@ namespace Grafkit
 				}
 			}
 
-			template <class Type, size_t N> void Write(const std::array<Type, N> & value, Json & jsonNode) const
+			template <class Type, size_t N> void Write(const std::array<Type, N> & value, Json & jsonNode) 
 			{
 				jsonNode = Json::array();
 				for (const auto & elem : value)
@@ -117,7 +117,7 @@ namespace Grafkit
 			// ----------------------------------------------------------------------------
 
 			// ---
-			template <typename Type> void Read(Type & value, const Json & jsonNode)
+			template <typename Type> void Read(Type & value, const Json & jsonNode) const 
 			{
 				// ---
 				if constexpr (std::is_arithmetic_v<Type> || Traits::is_string_type_v<Type>)
@@ -202,7 +202,7 @@ namespace Grafkit
 				}
 			}
 
-			template <class T, size_t N> void Read(T (&value)[N], const Json & jsonNode)
+			template <class T, size_t N> void Read(T (&value)[N], const Json & jsonNode) const 
 			{
 				size_t i = 0;
 				for (auto & elem : value)
@@ -212,7 +212,7 @@ namespace Grafkit
 				}
 			}
 
-			template <class T, size_t N> void Read(std::array<T, N> & value, const Json & jsonNode)
+			template <class T, size_t N> void Read(std::array<T, N> & value, const Json & jsonNode) const 
 			{
 				size_t i = 0;
 				for (auto & elem : value)

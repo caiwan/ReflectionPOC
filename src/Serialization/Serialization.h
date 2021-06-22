@@ -11,8 +11,8 @@ namespace Grafkit
 	class SerializerBase
 	{
 	public:
-		template <class T> const SerializerBase & operator<<(const T & value) const { return *this; }
-		template <class T> SerializerBase & operator>>(T & value) { return *this; }
+		template <class T> SerializerBase & operator<<(const T & value) { return *this; }
+		template <class T> const SerializerBase & operator>>(T & value) const { return *this; }
 	};
 
 	template <typename Base> class SerializerMixin : public SerializerBase, public Base
@@ -20,13 +20,13 @@ namespace Grafkit
 	public:
 		using Base::Base;
 
-		template <class T> const SerializerMixin & operator<<(const T & value) const
+		template <class T> SerializerMixin & operator<<(const T & value)
 		{
 			Base::Write(value);
 			return *this;
 		}
 
-		template <class T> SerializerMixin & operator>>(T & value)
+		template <class T> const SerializerMixin & operator>>(T & value) const
 		{
 			Base::Read(value);
 			return *this;

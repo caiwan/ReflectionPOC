@@ -27,7 +27,7 @@ namespace Grafkit::Serializer
 
 	protected:
 		// Write
-		template <typename Type> void Write(const Type & value) const
+		template <typename Type> void Write(const Type & value) 
 		{
 			assert(stream);
 
@@ -98,14 +98,14 @@ namespace Grafkit::Serializer
 		}
 
 		// Array support
-		template <class T, size_t N> void Write(const T (&value)[N]) const
+		template <class T, size_t N> void Write(const T (&value)[N]) 
 		{
 			const auto length = static_cast<SizeType>(N);
 			Write(length);
 			for (const auto & item : value) Write(item);
 		}
 
-		template <class T, size_t N> void Write(const std::array<T, N> & value) const
+		template <class T, size_t N> void Write(const std::array<T, N> & value) 
 		{
 			const auto length = static_cast<SizeType>(N);
 			Write(length);
@@ -115,7 +115,7 @@ namespace Grafkit::Serializer
 		// --------------------------------------------------------
 
 		// Read
-		template <typename Type> void Read(Type & value)
+		template <typename Type> void Read(Type & value) const 
 		{
 			assert(stream);
 			// ---
@@ -235,7 +235,7 @@ namespace Grafkit::Serializer
 			}
 		}
 
-		template <class T, size_t N> void Read(T (&value)[N])
+		template <class T, size_t N> void Read(T (&value)[N]) const 
 		{
 			SizeType length = 0;
 			Read(length);
@@ -243,7 +243,7 @@ namespace Grafkit::Serializer
 			for (auto & item : value) Read(item);
 		}
 
-		template <class T, size_t N> void Read(std::array<T, N> & value)
+		template <class T, size_t N> void Read(std::array<T, N> & value) const 
 		{
 			SizeType length = 0;
 			Read(length);
