@@ -1,3 +1,4 @@
+#pragma once 
 #include <algorithm>
 #include <type_traits>
 //
@@ -263,4 +264,7 @@ namespace Grafkit::Serializer
 		// Otherwise we would have to store the size_t length in the file and take extra measures.
 		static_assert(sizeof(SizeType) >= sizeof(size_t), "SizeType has to be compatible with size_t");
 	};
+	
+	
 } // namespace Grafkit::Serializer
+

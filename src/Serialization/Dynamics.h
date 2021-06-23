@@ -1,14 +1,18 @@
 
 #pragma once
-#include <Serialization/Serialization.h>
+
 #include <functional>
 #include <map>
 #include <refl.h>
+//
+#include <Serialization/Crc32.h>
+#include <Serialization/SerializerBase.h>
 
 namespace Grafkit
 {
+	class Archive;
 	class SerializerBase;
-}
+} // namespace Grafkit
 
 namespace Grafkit::Serializer
 {
@@ -32,16 +36,14 @@ namespace Grafkit::Serializer
 	public:
 		Dynamics(const Dynamics &) = delete;
 		Dynamics & operator=(const Dynamics &) = delete;
+		~Dynamics() = default;
 
 		typedef std::function<DynamicObject *()> FactoryFunction;
+		template <class T> static void Load(SerializerBase & s, T *& obj);
+		template <class T> static void Store(const SerializerBase & s, T * const & obj);
 
-		// template <class T> static void Load(Archive & ar, T *& obj);
-
-		// template <class T> static void Store(const Archive & ar, T * const & obj);
-
-		// template <class T> static void Load(Archive & ar, std::shared_ptr<T> & obj);
-
-		// template <class T> static void Store(const Archive & ar, const std::shared_ptr<T> & obj);
+		template <class T> static void Load(SerializerBase & ar, std::shared_ptr<T> & obj) { Load(ar, obj.get()); }
+		template <class T> static void Store(const SerializerBase & ar, const std::shared_ptr<T> & obj) { Store(ar, obj.get()); }
 
 		static Dynamics & Instance()
 		{
@@ -56,7 +58,6 @@ namespace Grafkit::Serializer
 
 	private:
 		Dynamics() = default;
-		~Dynamics() = default;
 
 		std::map<std::string, FactoryFunction> mFactories;
 
@@ -71,6 +72,18 @@ namespace Grafkit::Serializer
 			}
 		};
 	};
+
+	template <class T> void Dynamics::Load(SerializerBase & s, T *& obj)
+	{
+		// TODO Static assert if can be invoked
+		obj->_DynamicsInvokeSerializationRead(s);
+	}
+
+	template <class T> void Dynamics::Store(const SerializerBase & s, T * const & obj)
+	{
+		// TODO Static assert if can be invoked
+		obj->_DynamicsInvokeSerializationWrite(s, obj);
+	}
 
 	inline DynamicObject * Dynamics::Create(const char * className) const
 	{

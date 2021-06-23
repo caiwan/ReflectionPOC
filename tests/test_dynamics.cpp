@@ -86,39 +86,11 @@ DYNAMICS_IMPL(DummyB)
 TEST(Dynamics, DynamicsStore)
 {
 	const auto & dynamics = Grafkit::Serializer::Dynamics::Instance();
-	ASSERT_TRUE(dynamics.Create("DummyClass"));
-	ASSERT_TRUE(dynamics.Create("DummyClassInherited"));
-	ASSERT_TRUE(dynamics.Create("DummyB"));
-	ASSERT_TRUE(dynamics.Create("DummyA"));
+	ASSERT_TRUE(dynamic_cast < DummyClass*>( dynamics.Create("DummyClass")));
+	ASSERT_TRUE(dynamic_cast<DummyClassInherited *>(dynamics.Create("DummyClassInherited")));
+	ASSERT_TRUE(dynamic_cast<DummyB *>(dynamics.Create("DummyB")));
+	ASSERT_TRUE(dynamic_cast<DummyA *>(dynamics.Create("DummyA")));
 	ASSERT_FALSE(dynamics.Create("Does not exist"));
 }
 
-TEST(Dynamics, Hello0)
-{
-	DummyClass d;
-	refl::runtime::debug(std::cout, d, false);
-
-	std::cout << '\n';
-
-	DummyClassInherited di;
-	refl::runtime::debug(std::cout, di, false);
-
-	std::cout << '\n';
-}
-
-TEST(Dynamics, Hello1)
-{
-	DummyBase * da = new DummyA();
-	refl::runtime::debug(std::cout, da, false);
-	std::cout << '\n';
-	delete da;
-
-	std::cout << '\n';
-
-	DummyBase * db = new DummyB();
-	refl::runtime::debug(std::cout, db, false);
-	std::cout << '\n';
-	delete db;
-
-	std::cout << '\n';
-}
+// Serialize dynamic classes
