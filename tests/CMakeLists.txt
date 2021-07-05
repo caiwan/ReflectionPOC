@@ -14,7 +14,7 @@ add_test(NAME UnitTests
 )
 
 target_link_libraries(UnitTests PUBLIC
-    reflection
-	serialization
+    Grafkit::reflection
+	Grafkit::serialization
     GTest::GTest
 )
