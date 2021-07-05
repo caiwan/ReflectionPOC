@@ -94,3 +94,7 @@ TEST(Dynamics, DynamicsStore)
 }
 
 // Serialize dynamic classes
+
+// Does not work
+//static_assert(Grafkit::Traits::has_dynamics_invoke_serialization_read_v<DummyClass>);
+//static_assert(Grafkit::Traits::has_dynamics_invoke_serialization_write_v<DummyClass>);

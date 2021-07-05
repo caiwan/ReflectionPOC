@@ -7,11 +7,73 @@
 //
 #include <Serialization/Crc32.h>
 #include <Serialization/SerializerBase.h>
+#include <Serialization/Traits.h>
 
 namespace Grafkit
 {
 	class Archive;
 	class SerializerBase;
+
+	namespace Traits
+	{
+#ifndef GK_MSVC_SFINAE_HAS_FN_WORKAROUND
+		/**
+		 * Has push_back
+		 * @tparam T
+		 */
+
+		template <typename T, typename = void> struct has_dynamics_invoke_serialization_read_t : std::false_type
+		{
+		};
+
+		template <typename T>
+		struct has_dynamics_invoke_serialization_read_t<T,
+			std::void_t<decltype(static_cast<void (T::*)(const SerializerBase &)>(&T::_DynamicsInvokeSerializationRead))>> : std::true_type
+		{
+		};
+
+#else
+		GK_MSVC_SFINAE_HAS_FN_WORKAROUND(_DynamicsInvokeSerializationRead);
+		// To be able to befriend
+		template <typename T> struct has_dynamics_invoke_serialization_read_t : test_has__DynamicsInvokeSerializationRead<T, void(const SerializerBase &)>
+		{
+		};
+
+#endif
+		template <typename T> using has_dynamics_invoke_serialization_read = has_dynamics_invoke_serialization_read_t<T>;
+		template <typename T> constexpr bool has_dynamics_invoke_serialization_read_v = has_dynamics_invoke_serialization_read<T>::value;
+
+#ifndef GK_MSVC_SFINAE_HAS_FN_WORKAROUND
+		/**
+		 * Has push_back
+		 * @tparam T
+		 */
+
+		template <typename T, typename = void> struct has_dynamics_invoke_serialization_write : std::false_type
+		{
+		};
+
+		template <typename T>
+		struct has_dynamics_invoke_serialization_write<T,
+			std::void_t<decltype(static_cast<void (T::*)(SerializerBase &)>(&T::_DynamicsInvokeSerializationWrite))>> : std::true_type
+		{
+		};
+
+#else
+		GK_MSVC_SFINAE_HAS_FN_WORKAROUND(_DynamicsInvokeSerializationWrite);
+
+		// To be able to befriend
+		template <typename T> struct has_dynamics_invoke_serialization_write_t : test_has__DynamicsInvokeSerializationWrite<T, void(SerializerBase &)>
+		{
+		};
+
+#endif
+
+		template <typename T> using has_dynamics_invoke_serialization_write = has_dynamics_invoke_serialization_write_t<T>;
+		template <typename T> constexpr bool has_dynamics_invoke_serialization_write_v = has_dynamics_invoke_serialization_write<T>::value;
+
+	} // namespace Traits
+
 } // namespace Grafkit
 
 namespace Grafkit::Serializer
@@ -22,6 +84,14 @@ namespace Grafkit::Serializer
 
 	class DynamicObject
 	{
+		friend class Dynamics;
+		template <typename T> friend struct Traits::has_dynamics_invoke_serialization_write_t;
+		template <typename T> friend struct Traits::has_dynamics_invoke_serialization_read_t;
+
+	public:
+		virtual ~DynamicObject() = default;
+
+	private:
 		friend class Dynamics;
 		virtual std::string_view _DynamicsGetClazzName() = 0;
 		virtual Utils::Checksum _DynamicsGetClazzChecksum() = 0;
@@ -75,13 +145,13 @@ namespace Grafkit::Serializer
 
 	template <class T> void Dynamics::Load(SerializerBase & s, T *& obj)
 	{
-		// TODO Static assert if can be invoked
+		//static_assert(Traits::has_dynamics_invoke_serialization_read_v<T>);
 		obj->_DynamicsInvokeSerializationRead(s);
 	}
 
 	template <class T> void Dynamics::Store(const SerializerBase & s, T * const & obj)
 	{
-		// TODO Static assert if can be invoked
+		//static_assert(Traits::has_dynamics_invoke_serialization_write_v<T>);
 		obj->_DynamicsInvokeSerializationWrite(s, obj);
 	}
 
@@ -97,8 +167,8 @@ private:                                                                        
 	static Grafkit::Serializer::Dynamics::AddFactory<DYNAMIC_CLASS> _dynamicsAddFactory;                                                                       \
 	std::string_view DYNAMIC_CLASS::_DynamicsGetClazzName();                                                                                                   \
 	Grafkit::Utils::Checksum _DynamicsGetClazzChecksum() override;                                                                                             \
-	void _DynamicsInvokeSerializationRead(const Grafkit::SerializerBase & s) override;                                                                         \
-	void _DynamicsInvokeSerializationWrite(Grafkit::SerializerBase & s) const override;
+	void _DynamicsInvokeSerializationRead(const Grafkit::Serializer::SerializerBase & s) override;                                                             \
+	void _DynamicsInvokeSerializationWrite(Grafkit::Serializer::SerializerBase & s) const override;
 
 #define DYNAMICS_IMPL(DYNAMIC_CLASS)                                                                                                                           \
 	Grafkit::Serializer::Dynamics::AddFactory<DYNAMIC_CLASS> DYNAMIC_CLASS## ::_dynamicsAddFactory(refl::type_descriptor<DYNAMIC_CLASS>::name.data);           \
@@ -111,7 +181,7 @@ private:                                                                        
                                                                                                                                                                \
 	Grafkit::Utils::Checksum DYNAMIC_CLASS::_DynamicsGetClazzChecksum() { return Grafkit::Utils::Signature::CalcChecksum<DYNAMIC_CLASS>(); }                   \
                                                                                                                                                                \
-	void DYNAMIC_CLASS::_DynamicsInvokeSerializationRead(const Grafkit::SerializerBase & s)                                                                    \
+	void DYNAMIC_CLASS::_DynamicsInvokeSerializationRead(const Grafkit::Serializer::SerializerBase & s)                                                        \
 	{                                                                                                                                                          \
 		constexpr auto members = filter(refl::type_descriptor<DYNAMIC_CLASS>::members, [](auto member) { return Grafkit::Traits::is_serializable(member); });  \
 		refl::util::for_each(members, [&](auto member) {                                                                                                       \
@@ -120,7 +190,7 @@ private:                                                                        
 		});                                                                                                                                                    \
 	}                                                                                                                                                          \
                                                                                                                                                                \
-	void DYNAMIC_CLASS::_DynamicsInvokeSerializationWrite(Grafkit::SerializerBase & s) const                                                                   \
+	void DYNAMIC_CLASS::_DynamicsInvokeSerializationWrite(Grafkit::Serializer::SerializerBase & s) const                                                       \
 	{                                                                                                                                                          \
 		constexpr auto members = filter(refl::type_descriptor<DYNAMIC_CLASS>::members, [](auto member) { return Grafkit::Traits::is_serializable(member); });  \
 		refl::util::for_each(members, [&](auto member) {                                                                                                       \
