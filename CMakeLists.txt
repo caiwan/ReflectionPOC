@@ -66,6 +66,8 @@ install(EXPORT ${ROOT_PROJECT}-targets
         ${INSTALL_CONFIGDIR}
 )
 
+# TODO::: CONFIG IS LEFT https://pabloariasal.github.io/2018/02/19/its-time-to-do-cmake-right/
+
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     ${CMAKE_CURRENT_BINARY_DIR}/${ROOT_PROJECT}ConfigVersion.cmake
