@@ -11,7 +11,10 @@ function(assign_source_group)
 
     get_filename_component(_source_path "${_source_rel}" PATH)
 
-    string(REPLACE "/" "\\" _source_group_path "${_source_path}")
+    set(_source_group_path "${_source_path}")
+    string(REPLACE "../include" "" _source_group_path "${_source_group_path}")
+    string(REPLACE "../" "" _source_group_path "${_source_group_path}")
+    string(REPLACE "/" "\\" _source_group_path "${_source_group_path}")
 
     if ("${_source}" MATCHES ".*\\.(c(p|x)*|inc)\\s?")
       set(_source_group_path "Source Files\\${_source_group_path}")
@@ -57,7 +60,12 @@ function(assign_custom_source_group SOURCE_GRP IN_FILES)
     endif ()
 
     get_filename_component(_source_path "${_source_rel}" PATH)
-    string(REPLACE "/" "\\" _source_group_path "${_source_path}")
+
+    set(_source_group_path "${_source_path}")
+    string(REPLACE "../include" "" _source_group_path "${_source_group_path}")
+    string(REPLACE "../" "" _source_group_path "${_source_group_path}")
+    string(REPLACE "/" "\\" _source_group_path "${_source_group_path}")
+
     source_group("${SOURCE_GRP}/${_source_group_path}" FILES "${_source}")
 
   endforeach ()

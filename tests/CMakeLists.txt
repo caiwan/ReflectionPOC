@@ -14,6 +14,7 @@ add_test(NAME UnitTests
 )
 
 target_link_libraries(UnitTests PUBLIC
-    Reflection 
+    reflection
+	serialization
     GTest::GTest
 )
