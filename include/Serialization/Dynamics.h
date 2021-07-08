@@ -235,20 +235,6 @@ private:                                                                        
                                                                                                                                                                \
 	Grafkit::Utils::Checksum DYNAMIC_CLASS::_DynamicsGetClazzChecksum() { return Grafkit::Utils::Signature::CalcChecksum<DYNAMIC_CLASS>(); }                   \
                                                                                                                                                                \
-	void DYNAMIC_CLASS::_DynamicsInvokeSerializationRead(const Grafkit::Serializer::SerializerBase & s)                                                        \
-	{                                                                                                                                                          \
-		constexpr auto members = filter(refl::type_descriptor<DYNAMIC_CLASS>::members, [](auto member) { return Grafkit::Traits::is_serializable(member); });  \
-		refl::util::for_each(members, [&](auto member) {                                                                                                       \
-			auto & memberValue = member(*this);                                                                                                                \
-			s >> memberValue;                                                                                                                                  \
-		});                                                                                                                                                    \
-	}                                                                                                                                                          \
+	void DYNAMIC_CLASS::_DynamicsInvokeSerializationRead(const Grafkit::Serializer::SerializerBase & s) { s >> *this; }                                        \
                                                                                                                                                                \
-	void DYNAMIC_CLASS::_DynamicsInvokeSerializationWrite(Grafkit::Serializer::SerializerBase & s) const                                                       \
-	{                                                                                                                                                          \
-		constexpr auto members = filter(refl::type_descriptor<DYNAMIC_CLASS>::members, [](auto member) { return Grafkit::Traits::is_serializable(member); });  \
-		refl::util::for_each(members, [&](auto member) {                                                                                                       \
-			const auto & memberValue = member(*this);                                                                                                          \
-			s << memberValue;                                                                                                                                  \
-		});                                                                                                                                                    \
-	}
+	void DYNAMIC_CLASS::_DynamicsInvokeSerializationWrite(Grafkit::Serializer::SerializerBase & s) const { s << *this; }

@@ -1,105 +1,100 @@
-//#define _CRT_SECURE_NO_WARNINGS
+#include <fstream>
+#include <gtest/gtest.h>
 //
-//#include <fstream>
-//#include <gtest/gtest.h>
-////
-//#include <Serialization/Serialization.h>
-//
-//using Serializable = Grafkit::Attributes::Serializable;
-//using Serializable = Grafkit::Attributes::Property;
-//using DynamicObject = Grafkit::Serializer::DynamicObject;
-//
-//struct UseBinarySerializer
-//{
-//	using Serializer = Grafkit::BinarySerializer;
-//
-//	template <class T> void Serialize(const T & obj, std::stringstream & s)
-//	{
-//		Serializer serializer(Grafkit::OutputStream<std::stringstream>{s});
-//		serializer << obj;
-//	}
-//
-//	template <class T> void Deserialize(const std::stringstream & s, T & obj)
-//	{
-//		Serializer serializer(Grafkit::InputStream<std::stringstream>{s});
-//		serializer >> obj;
-//	}
-//};
-//
-//struct UseJsonSerializer
-//{
-//	using Serializer = Grafkit::JsonSerializer;
-//
-//	template <class T> void Serialize(const T & obj, std::stringstream & s) {}
-//
-//	template <class T> void Deserialize(const std::stringstream & s, T & obj) {}
-//};
-//
-//// --
-//
-//template <class SerializerAdapter> class TestPersistence : public testing::Test, public SerializerAdapter
-//{
-//};
-//
-//typedef testing::Types<UseBinarySerializer, UseJsonSerializer> PersistenceTestImplementations;
-//
-//TYPED_TEST_CASE(TestPersistence, PersistenceTestImplementations);
-//
-//// --
-//
-//// TODO: USE Properties
-//// https://veselink1.github.io/refl-cpp/md__i_n_t_r_o_d_u_c_t_i_o_n.html
-//// https://veselink1.github.io/refl-cpp/structrefl_1_1attr_1_1property.html
-//
-//class SimpleClass : public DynamicObject
-//{
-//public:
-//	SimpleClass() : m_integer(0) {}
-//
-//	SimpleClass(int integer, const std::string & string) : m_integer(integer), m_string(string) {}
-//
-//	int Integer() const { return m_integer; }
-//	void SetInteger(const int integer) { m_integer = integer; }
-//	std::string String() const { return m_string; }
-//	void SetString(const std::string & string) { m_string = string; }
-//
-//private:
-//	int m_integer;
-//	std::string m_string;
-//
-//	DYNAMICS_DECL(SimpleClass)
-//};
-//
-//REFL_TYPE(SimpleClass, bases<>)
-//REFL_FUNC(Integer, Property("integer") Serializable())
-//REFL_FUNC(String, Serializable())
-//REFL_END
-//
-//DYNAMICS_IMPL(SimpleClass)
-//
-//TYPED_TEST(TestPersistence, SimpleObjectTest)
-//{
-//
-//	std::shared_ptr<SimpleClass> obj = std::make_shared<SimpleClass>(42, "some parameter");
-//
-//	std::stringstream s;
-//	Serialize(obj, s);
-//
-//	std::shared_ptr<SimpleClass> readObj;
-//	Deserialize(s, readObj);
-//
-//	ASSERT_TRUE(readObj);
-//	ASSERT_NE(obj, readObj);
-//
-//	ASSERT_EQ(obj->Integer(), readObj->Integer());
-//	ASSERT_STREQ(obj->String().c_str(), readObj->String().c_str());
-//}
+#include <Serialization/Serialization.h>
+
+using Serializable = Grafkit::Attributes::Serializable;
+using Property = Grafkit::Attributes::Property;
+using DynamicObject = Grafkit::Serializer::DynamicObject;
+
+struct UseBinarySerializer
+{
+	using Serializer = Grafkit::BinarySerializer;
+
+	template <class T> void Serialize(const T & obj, std::stringstream & s)
+	{
+		Serializer serializer(Grafkit::OutputStream<std::stringstream>{s});
+		serializer << obj;
+	}
+
+	template <class T> void Deserialize(const std::stringstream & s, T & obj)
+	{
+		Serializer serializer(Grafkit::InputStream<std::stringstream>{s});
+		serializer >> obj;
+	}
+};
+
+struct UseJsonSerializer
+{
+	using Serializer = Grafkit::JsonSerializer;
+
+	template <class T> void Serialize(const T & obj, std::stringstream & s) {}
+
+	template <class T> void Deserialize(const std::stringstream & s, T & obj) {}
+};
+
+// --
+
+template <class SerializerAdapter> class TestPersistence : public testing::Test, public SerializerAdapter
+{
+};
+
+typedef testing::Types<UseBinarySerializer, UseJsonSerializer> PersistenceTestImplementations;
+
+TYPED_TEST_CASE(TestPersistence, PersistenceTestImplementations);
+
+class SimpleClass : public DynamicObject
+{
+public:
+	SimpleClass() : m_integer(0) {}
+
+	SimpleClass(int integer, const std::string & string) : m_integer(integer), m_string(string) {}
+
+	int Integer() const { return m_integer; }
+	void SetInteger(const int integer) { m_integer = integer; }
+
+	std::string String() const { return m_string; }
+	void SetString(const std::string & string) { m_string = string; }
+
+private:
+	int m_integer;
+	std::string m_string;
+
+	DYNAMICS_DECL(SimpleClass)
+};
+
+REFL_TYPE(SimpleClass, bases<>)
+REFL_FUNC(Integer, Property("integer"), Serializable())
+REFL_FUNC(SetInteger, Property("integer"), Serializable())
+REFL_FUNC(String, Property("string"), Serializable())
+REFL_FUNC(SetString, Property("string"), Serializable())
+REFL_END
+
+DYNAMICS_IMPL(SimpleClass)
+
+ TYPED_TEST(TestPersistence, SimpleObjectTest)
+{
+
+	std::shared_ptr<SimpleClass> obj = std::make_shared<SimpleClass>(42, "some parameter");
+
+	std::stringstream s;
+	Serialize(obj, s);
+
+	std::shared_ptr<SimpleClass> readObj;
+	Deserialize(s, readObj);
+
+	ASSERT_TRUE(readObj);
+	ASSERT_NE(obj, readObj);
+
+	ASSERT_EQ(obj->Integer(), readObj->Integer());
+	ASSERT_STREQ(obj->String().c_str(), readObj->String().c_str());
+}
 //
 //// --
 //
-//class NestedClass : public DynamicObject
+// class NestedClass : public DynamicObject
 //{
-//public:
+// public:
 //	NestedClass() {}
 //
 //	NestedClass(const std::shared_ptr<SimpleClass> & simpleClass, const std::shared_ptr<SimpleClass> & simpleClass1) : m_obj1(simpleClass), m_obj2(simpleClass1)
@@ -109,21 +104,21 @@
 //	std::shared_ptr<SimpleClass> GetObj1() const { return m_obj1; }
 //	std::shared_ptr<SimpleClass> GetObj2() const { return m_obj2; }
 //
-//private:
+// private:
 //	std::shared_ptr<SimpleClass> m_obj1;
 //	std::shared_ptr<SimpleClass> m_obj2;
 //
 //	DYNAMICS_DECL(NestedClass)
 //};
 //
-//REFL_TYPE(NestedClass, bases<>)
-//REFL_FIELD(m_obj1, Serializable())
-//REFL_FIELD(m_obj2, Serializable())
-//REFL_END
+// REFL_TYPE(NestedClass, bases<>)
+// REFL_FIELD(m_obj1, Serializable())
+// REFL_FIELD(m_obj2, Serializable())
+// REFL_END
 //
-//DYNAMICS_IMPL(NestedClass)
+// DYNAMICS_IMPL(NestedClass)
 //
-//TEST(Persistence, NestedClassTest)
+// TEST(Persistence, NestedClassTest)
 //{
 //	//// given
 //	// std::stringstream s;
@@ -150,7 +145,7 @@
 //	// ASSERT_FALSE(readObjNull->GetObj2());
 //}
 //
-//TEST(Persistence, BadTypeTest)
+// TEST(Persistence, BadTypeTest)
 //{
 //	//// given
 //	// std::stringstream s;
@@ -171,9 +166,9 @@
 // *
 // **************************************************************************************************************************************** */
 //
-//class SimpleBaseClass : public DynamicObject
+// class SimpleBaseClass : public DynamicObject
 //{
-//public:
+// public:
 //	SimpleBaseClass() : m_i(0) {}
 //
 //	SimpleBaseClass(const int i, const std::string & str) : m_i(i), m_str(str) {}
@@ -183,63 +178,63 @@
 //
 //	virtual std::string GetSomeIntern() const = 0;
 //
-//protected:
+// protected:
 //	// TODO: generate for base calss
 //	// template <class AR> void Serialize(AR & ar) { ar & m_i & m_str; }
 //
-//private:
+// private:
 //	int m_i;
 //	std::string m_str;
 //};
 //
-//REFL_TYPE(SimpleBaseClass, bases<>)
-//REFL_FIELD(m_i, Serializable())
-//REFL_FIELD(m_str, Serializable())
-//REFL_END
+// REFL_TYPE(SimpleBaseClass, bases<>)
+// REFL_FIELD(m_i, Serializable())
+// REFL_FIELD(m_str, Serializable())
+// REFL_END
 //
-//class DerivedClassA : public SimpleBaseClass
+// class DerivedClassA : public SimpleBaseClass
 //{
-//public:
+// public:
 //	DerivedClassA() {}
 //
 //	DerivedClassA(int i, const std::string & str, const std::string & str1) : SimpleBaseClass(i, str), m_str1(str1) {}
 //
 //	std::string GetSomeIntern() const override { return m_str1; }
 //
-//private:
+// private:
 //	std::string m_str1;
 //
 //	DYNAMICS_DECL(DerivedClassA)
 //};
 //
-//REFL_TYPE(DerivedClassA, bases<SimpleBaseClass>)
-//REFL_FIELD(m_str1, Serializable())
-//REFL_END
+// REFL_TYPE(DerivedClassA, bases<SimpleBaseClass>)
+// REFL_FIELD(m_str1, Serializable())
+// REFL_END
 //
-//DYNAMICS_IMPL(DerivedClassA)
+// DYNAMICS_IMPL(DerivedClassA)
 //
-//class DerivedClassB : public SimpleBaseClass
+// class DerivedClassB : public SimpleBaseClass
 //{
-//public:
+// public:
 //	DerivedClassB() {}
 //
 //	DerivedClassB(int i, const std::string & str, const std::string & str2) : SimpleBaseClass(i, str), m_str2(str2) {}
 //
 //	std::string GetSomeIntern() const override { return m_str2; }
 //
-//private:
+// private:
 //	std::string m_str2;
 //
 //	DYNAMICS_DECL(DerivedClassB)
 //};
 //
-//REFL_TYPE(DerivedClassB, bases<SimpleBaseClass>)
-//REFL_FIELD(m_str2, Serializable())
-//REFL_END
+// REFL_TYPE(DerivedClassB, bases<SimpleBaseClass>)
+// REFL_FIELD(m_str2, Serializable())
+// REFL_END
 //
-//DYNAMICS_IMPL(DerivedClassB)
+// DYNAMICS_IMPL(DerivedClassB)
 //
-//TEST(Persistence, PolimorphClassTest)
+// TEST(Persistence, PolimorphClassTest)
 //{
 //	//// given
 //	// std::stringstream s;
@@ -272,7 +267,7 @@
 //	// ASSERT_TRUE(objB->GetSomeIntern().compare(readObjB->GetSomeIntern()) == 0);
 //}
 //
-//void Verify(const std::shared_ptr<SimpleBaseClass> & expected, const std::shared_ptr<SimpleBaseClass> & actual)
+// void Verify(const std::shared_ptr<SimpleBaseClass> & expected, const std::shared_ptr<SimpleBaseClass> & actual)
 //{
 //	ASSERT_TRUE(actual);
 //	ASSERT_NE(expected, actual);
@@ -281,7 +276,7 @@
 //	ASSERT_STREQ(expected->GetSomeIntern().c_str(), actual->GetSomeIntern().c_str());
 //}
 //
-//TEST(Persistence, STLContainerObjects)
+// TEST(Persistence, STLContainerObjects)
 //{
 //	//// given
 //	// std::stringstream s;
