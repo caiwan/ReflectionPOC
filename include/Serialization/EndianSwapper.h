@@ -96,7 +96,7 @@ namespace Grafkit::EndianSwapper
 	template <> class SwapByte<float, 4> : public SwapByteBase
 	{
 	public:
-		static float Swap(float v)
+		static float Swap(const float v)
 		{
 			union {
 				float f;
@@ -116,7 +116,7 @@ namespace Grafkit::EndianSwapper
 	template <> class SwapByte<double, 8> : public SwapByteBase
 	{
 	public:
-		static double Swap(double v)
+		static double Swap(const double v)
 		{
 			union {
 				double f;

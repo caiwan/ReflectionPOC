@@ -4,6 +4,8 @@
 
 # ---
 
+# TODO: Opt out from using targets
+
 if (NOT TARGET project_warnings)
 
     # Link this 'library' to use the following warnings

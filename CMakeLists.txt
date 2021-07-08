@@ -6,17 +6,22 @@ project(
 	LANGUAGES C CXX
 )
 
+# --- Adjust paths
+
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
+set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+
+# --- Variables
+include(StringUtils)
 set(ROOT_PROJECT ${PROJECT_NAME})
+string_camel_case_to_upper_snake_case(${ROOT_PROJECT} ROOT_PROJECT_SNAKE_CASE)
 
 # --- Project and build options
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 
-# --- Adjust paths
 
-set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
-set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
 
 option(CONAN_PROFILE "Conan profile" "default")
 
@@ -50,8 +55,13 @@ endif ()
 add_subdirectory(src)
 
 # -- Create empty install target for internal meta targets
+# TODO Get rid of this eventually
 install(TARGETS project_warnings EXPORT ${ROOT_PROJECT}-targets)
 install(TARGETS project_no_warnings EXPORT ${ROOT_PROJECT}-targets)
+
+# -- Set exported libraries
+# TODO USe ROOT_PROJECT
+set(PROJECT_EXPORTED_LIBRARIES Grafkit::reflection Grafkit::serialization)
 
 # --- Install targets
 include(GNUInstallDirs)
@@ -65,8 +75,6 @@ install(EXPORT ${ROOT_PROJECT}-targets
     DESTINATION
         ${INSTALL_CONFIGDIR}
 )
-
-# TODO::: CONFIG IS LEFT https://pabloariasal.github.io/2018/02/19/its-time-to-do-cmake-right/
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
@@ -125,7 +133,7 @@ install(FILES ${CPACK_RESOURCE_FILE_README} ${CPACK_RESOURCE_FILE_LICENSE}
 include(CPack)
 
 # --- Add tests
-OPTION(${ROOT_PROJECT}_ENABLE_TESTING "Enable tests to build and execute" ON)
-IF (${ROOT_PROJECT}_ENABLE_TESTING)
+OPTION(${ROOT_PROJECT_SNAKE_CASE}_ENABLE_TESTING "Enable tests to build and execute" ON)
+IF (${ROOT_PROJECT_SNAKE_CASE}_ENABLE_TESTING)
 	add_subdirectory(tests)
-ENDIF(${ROOT_PROJECT}_ENABLE_TESTING)
+ENDIF(${ROOT_PROJECT_SNAKE_CASE}_ENABLE_TESTING)

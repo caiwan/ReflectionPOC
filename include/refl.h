@@ -34,6 +34,13 @@
 #include <type_traits>
 #include <utility> // std::move, std::forward
 
+#if defined(__APPLE__)
+
+#	include <complex>
+#	include <memory>
+
+#else
+
 namespace std
 {
 	template <typename T, typename Deleter> class unique_ptr;
@@ -44,6 +51,8 @@ namespace std
 
 	template <typename T> class complex;
 } // namespace std
+
+#endif
 
 #ifdef _MSC_VER
 // Disable VS warning for "Not enough arguments for macro"
@@ -170,7 +179,10 @@ namespace refl
 				constexpr size_t NewSize = std::min(Count, N - Pos);
 
 				char buf[NewSize + 1]{};
-				for (size_t i = 0; i < NewSize; i++) { buf[i] = data[Pos + i]; }
+				for (size_t i = 0; i < NewSize; i++)
+				{
+					buf[i] = data[Pos + i];
+				}
 
 				return const_string<NewSize>(buf);
 			}
@@ -187,7 +199,10 @@ namespace refl
 			{
 				for (size_t i = pos; i < N; i++)
 				{
-					if (data[i] == ch) { return i; }
+					if (data[i] == ch)
+					{
+						return i;
+					}
 				}
 				return npos;
 			}
@@ -204,7 +219,10 @@ namespace refl
 			{
 				for (size_t i = (pos == npos ? N - 1 : pos); i + 1 > 0; i--)
 				{
-					if (data[i] == ch) { return i; }
+					if (data[i] == ch)
+					{
+						return i;
+					}
 				}
 				return npos;
 			}
@@ -213,12 +231,12 @@ namespace refl
 			/**
 			 * Creates a copy of a const_string.
 			 */
-			template <size_t... Idx> constexpr const_string(const const_string<N> & other, std::index_sequence<Idx...>) noexcept : data{ other.data[Idx]... } {}
+			template <size_t... Idx> constexpr const_string(const const_string<N> & other, std::index_sequence<Idx...>) noexcept : data{other.data[Idx]...} {}
 
 			/**
 			 * Creates a const_string by copying the contents of data.
 			 */
-			template <size_t... Idx> constexpr const_string(const char (&data)[sizeof...(Idx) + 1], std::index_sequence<Idx...>) noexcept : data{ data[Idx]... }
+			template <size_t... Idx> constexpr const_string(const char (&data)[sizeof...(Idx) + 1], std::index_sequence<Idx...>) noexcept : data{data[Idx]...}
 			{
 			}
 		};
@@ -244,7 +262,7 @@ namespace refl
 		 */
 		constexpr const_string<1> make_const_string(char ch) noexcept
 		{
-			const char str[2]{ ch, '\0' };
+			const char str[2]{ch, '\0'};
 			return make_const_string(str);
 		}
 
@@ -288,12 +306,18 @@ namespace refl
 		 */
 		template <size_t N, size_t M> constexpr bool operator==(const const_string<N> & a, const const_string<M> & b) noexcept
 		{
-			if constexpr (N != M) { return false; }
+			if constexpr (N != M)
+			{
+				return false;
+			}
 			else
 			{
 				for (size_t i = 0; i < M; i++)
 				{
-					if (a.data[i] != b.data[i]) { return false; }
+					if (a.data[i] != b.data[i])
+					{
+						return false;
+					}
 				}
 				return true;
 			}
@@ -343,7 +367,10 @@ namespace refl
 			template <size_t N> constexpr const_string<N> copy_from_unsized(const char * const str)
 			{
 				const_string<N> cstr;
-				for (size_t i = 0; i < N; i++) { cstr.data[i] = str[i]; }
+				for (size_t i = 0; i < N; i++)
+				{
+					cstr.data[i] = str[i];
+				}
 				return cstr;
 			}
 		} // namespace detail
@@ -440,10 +467,10 @@ namespace refl_impl
 			template <size_t, typename> struct member;
 
 			/** The number of reflected members of the target type T. */
-			static constexpr size_t member_count{ 0 };
+			static constexpr size_t member_count{0};
 
 			/** This is a placeholder definition which shold not be referenced by well-formed programs. */
-			static constexpr refl::const_string<0> name{ "" };
+			static constexpr refl::const_string<0> name{""};
 
 			/** This is a placeholder definition which shold not be referenced by well-formed programs. */
 			static constexpr std::tuple<> attributes{};
@@ -572,7 +599,7 @@ namespace refl
 		 *
 		 * @see refl::trait::is_reflectable
 		 */
-		template <typename T>[[maybe_unused]] static constexpr bool is_reflectable_v{ is_reflectable<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_reflectable_v{is_reflectable<T>::value};
 
 		namespace detail
 		{
@@ -594,7 +621,7 @@ namespace refl
 		/**
 		 * Checks whether objects of the type T support member .begin() and .end() operations.
 		 */
-		template <typename T>[[maybe_unused]] static constexpr bool is_container_v{ is_container<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_container_v{is_container<T>::value};
 
 		namespace detail
 		{
@@ -926,7 +953,7 @@ namespace refl
 			template <template <typename> typename Predicate, typename Head, typename... Tail> struct filter_impl<Predicate, Head, Tail...>
 			{
 				using type = std::conditional_t<Predicate<Head>::value, prepend_t<Head, typename filter_impl<Predicate, Tail...>::type>,
-				    typename filter_impl<Predicate, Tail...>::type>;
+					typename filter_impl<Predicate, Tail...>::type>;
 			};
 
 			template <template <typename> typename, typename...> struct map_impl;
@@ -1014,7 +1041,7 @@ namespace refl
 		 * Detects whether T is a template specialization.
 		 * @see is_instance
 		 */
-		template <typename T>[[maybe_unused]] static constexpr bool is_instance_v{ is_instance<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_instance_v{is_instance<T>::value};
 
 		namespace detail
 		{
@@ -1028,7 +1055,7 @@ namespace refl
 
 				template <template <typename...> typename V> static std::false_type test(...);
 
-				static constexpr bool value{ decltype(test<U>(0))::value };
+				static constexpr bool value{decltype(test<U>(0))::value};
 			};
 
 			template <template <typename...> typename T, typename U> struct is_instance_of : public std::false_type
@@ -1059,7 +1086,7 @@ namespace refl
 		 * Detects whther the type U is a template specialization of T.
 		 * @see is_instance_of_v
 		 */
-		template <template <typename...> typename T, typename U>[[maybe_unused]] static constexpr bool is_instance_of_v{ is_instance_of<T, U>::value };
+		template <template <typename...> typename T, typename U>[[maybe_unused]] static constexpr bool is_instance_of_v{is_instance_of<T, U>::value};
 
 		/// \private
 		template <typename, typename> struct contains;
@@ -1233,7 +1260,7 @@ namespace refl
 
 			template <typename UniqueList, typename T, typename... Ts>
 			struct unique_impl<UniqueList, type_list<T, Ts...>> : std::conditional_t<contains_v<T, UniqueList>, unique_impl<UniqueList, type_list<Ts...>>,
-			                                                          unique_impl<append_t<T, UniqueList>, type_list<Ts...>>>
+																	  unique_impl<append_t<T, UniqueList>, type_list<Ts...>>>
 			{
 			};
 		} // namespace detail
@@ -1288,7 +1315,7 @@ namespace refl
 		template <typename T, typename... Ts> constexpr std::array<T, sizeof...(Ts)> to_array(const std::tuple<Ts...> & tuple) noexcept
 		{
 			return std::apply(
-			    [](auto &&... args) -> std::array<T, sizeof...(Ts)> { return { std::forward<decltype(args)>(args)... }; }, tuple);
+				[](auto &&... args) -> std::array<T, sizeof...(Ts)> { return {std::forward<decltype(args)>(args)...}; }, tuple);
 		}
 
 		/**
@@ -1359,11 +1386,9 @@ namespace refl
 				static_assert(std::is_trivial_v<T>, "Argument is a non-trivial type!");
 
 				auto && result = invoke_optional_index(f, T{}, I, 0);
-				return eval_in_order_to_tuple(type_list<Ts...>{},
-				    std::index_sequence<Idx...>{},
-				    std::forward<F>(f),
-				    std::forward<Carry>(carry)...,         // carry the previous results over
-				    std::forward<decltype(result)>(result) // pass the current result after them
+				return eval_in_order_to_tuple(type_list<Ts...>{}, std::index_sequence<Idx...>{}, std::forward<F>(f),
+					std::forward<Carry>(carry)...,         // carry the previous results over
+					std::forward<decltype(result)>(result) // pass the current result after them
 				);
 			}
 		} // namespace detail
@@ -1438,7 +1463,7 @@ namespace refl
 			static_assert(std::is_trivial_v<T>, "Argument is a non-trivial type!");
 
 			return accumulate(
-			    type_list<Ts...>{}, std::forward<F>(f), std::forward<std::invoke_result_t<F &&, R &&, T &&>>(f(std::forward<R>(initial_value), T{})));
+				type_list<Ts...>{}, std::forward<F>(f), std::forward<std::invoke_result_t<F &&, R &&, T &&>>(f(std::forward<R>(initial_value), T{})));
 		}
 
 		/**
@@ -1449,7 +1474,7 @@ namespace refl
 		template <typename F, typename... Ts> constexpr size_t count_if(type_list<Ts...> list, F && f)
 		{
 			return accumulate<size_t>(
-			    list, [&](size_t acc, const auto & t) -> size_t { return acc + (f(t) ? 1 : 0); }, 0);
+				list, [&](size_t acc, const auto & t) -> size_t { return acc + (f(t) ? 1 : 0); }, 0);
 		}
 
 		namespace detail
@@ -1459,7 +1484,10 @@ namespace refl
 			template <typename F, typename T, typename... Ts, typename... Carry> constexpr auto filter(F f, type_list<T, Ts...>, type_list<Carry...>)
 			{
 				static_assert(std::is_trivial_v<T>, "Argument is a non-trivial type!");
-				if constexpr (f(T{})) { return filter(f, type_list<Ts...>{}, type_list<Carry..., T>{}); }
+				if constexpr (f(T{}))
+				{
+					return filter(f, type_list<Ts...>{}, type_list<Carry..., T>{});
+				}
 				else
 				{
 					return filter(f, type_list<Ts...>{}, type_list<Carry...>{});
@@ -1735,7 +1763,7 @@ namespace refl
 		/**
 		 * A trait for detecting whether the type 'T' is a member descriptor.
 		 */
-		template <typename T>[[maybe_unused]] static constexpr bool is_member_v{ is_member<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_member_v{is_member<T>::value};
 
 		namespace detail
 		{
@@ -1754,7 +1782,7 @@ namespace refl
 		/**
 		 * A trait for detecting whether the type 'T' is a field descriptor.
 		 */
-		template <typename T>[[maybe_unused]] static constexpr bool is_field_v{ is_field<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_field_v{is_field<T>::value};
 
 		namespace detail
 		{
@@ -1773,7 +1801,7 @@ namespace refl
 		/**
 		 * A trait for detecting whether the type 'T' is a function descriptor.
 		 */
-		template <typename T>[[maybe_unused]] static constexpr bool is_function_v{ is_function<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_function_v{is_function<T>::value};
 
 		/**
 		 * Detects whether the type T is a type_descriptor.
@@ -1787,7 +1815,7 @@ namespace refl
 		 * Detects whether the type T is a type_descriptor.
 		 * @see is_type
 		 */
-		template <typename T>[[maybe_unused]] constexpr bool is_type_v{ is_type<T>::value };
+		template <typename T>[[maybe_unused]] constexpr bool is_type_v{is_type<T>::value};
 
 		/**
 		 * A trait for detecting whether the type 'T' is a refl-cpp descriptor.
@@ -1799,7 +1827,7 @@ namespace refl
 		/**
 		 * A trait for detecting whether the type 'T' is a refl-cpp descriptor.
 		 */
-		template <typename T>[[maybe_unused]] static constexpr bool is_descriptor_v{ is_descriptor<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_descriptor_v{is_descriptor<T>::value};
 
 		/** Checks whether T is marked as a property. */
 		template <typename T> struct is_property : std::bool_constant<trait::is_function_v<T> && trait::contains_v<attr::property, typename T::attribute_types>>
@@ -1807,7 +1835,7 @@ namespace refl
 		};
 
 		/** Checks whether T is marked as a property. */
-		template <typename T>[[maybe_unused]] static constexpr bool is_property_v{ is_property<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_property_v{is_property<T>::value};
 	} // namespace trait
 
 	/**
@@ -1857,7 +1885,7 @@ namespace refl
 
 			template <typename T, size_t N>
 			using make_descriptor = std::conditional_t<refl::trait::is_field_v<refl::detail::member_info<T, N>>, field_descriptor<T, N>,
-			    std::conditional_t<refl::trait::is_function_v<refl::detail::member_info<T, N>>, function_descriptor<T, N>, void>>;
+				std::conditional_t<refl::trait::is_function_v<refl::detail::member_info<T, N>>, function_descriptor<T, N>, void>>;
 
 			template <typename T> type_list<> enumerate_members(std::index_sequence<>);
 
@@ -1979,13 +2007,13 @@ namespace refl
 			 * The name of the reflected member.
 			 * \copydetails refl::descriptor::get_name
 			 */
-			static constexpr auto name{ member::name };
+			static constexpr auto name{member::name};
 
 			/**
 			 * The attributes of the reflected member.
 			 * \copydetails refl::descriptor::get_attributes
 			 */
-			static constexpr auto attributes{ member::attributes };
+			static constexpr auto attributes{member::attributes};
 		};
 
 		/**
@@ -2013,19 +2041,19 @@ namespace refl
 			 * Whether the field is static or not.
 			 * \copydetails refl::descriptor::is_static
 			 */
-			static constexpr bool is_static{ !std::is_member_object_pointer_v<decltype(member::pointer)> };
+			static constexpr bool is_static{!std::is_member_object_pointer_v<decltype(member::pointer)>};
 
 			/**
 			 * Whether the field is const or not.
 			 * @see refl::descriptor::is_const
 			 */
-			static constexpr bool is_writable{ !std::is_const_v<value_type> };
+			static constexpr bool is_writable{!std::is_const_v<value_type>};
 
 			/**
 			 * A member pointer to the reflected field of the appropriate type.
 			 * \copydetails refl::descriptor::get_pointer
 			 */
-			static constexpr auto pointer{ member::pointer };
+			static constexpr auto pointer{member::pointer};
 
 		private:
 			using invoker = decltype(detail::field_type_switch<field_descriptor>(std::bool_constant<is_static>{}));
@@ -2092,14 +2120,14 @@ namespace refl
 			 * Returns a pointer to a non-overloaded function.
 			 * \copydetails refl::descriptor::get_pointer
 			 */
-			static constexpr auto pointer{ detail::get_function_pointer<member>(0) };
+			static constexpr auto pointer{detail::get_function_pointer<member>(0)};
 
 			/**
 			 * Whether the pointer member was correctly resolved to a concrete implementation.
 			 * If this field is false, resolve() would need to be called instead.
 			 * \copydetails refl::descriptor::is_resolved
 			 */
-			static constexpr bool is_resolved{ !std::is_same_v<decltype(pointer), const decltype(nullptr)> };
+			static constexpr bool is_resolved{!std::is_same_v<decltype(pointer), const decltype(nullptr)>};
 
 			/**
 			 * Whether the pointer can be resolved as with the specified type.
@@ -2195,13 +2223,13 @@ namespace refl
 			 * The name of the reflected type.
 			 * \copydetails refl::descriptor::get_name
 			 */
-			static constexpr const auto name{ type_info::name };
+			static constexpr const auto name{type_info::name};
 
 			/**
 			 * The attributes of the reflected type.
 			 * \copydetails refl::descriptor::get_attributes
 			 */
-			static constexpr const auto attributes{ type_info::attributes };
+			static constexpr const auto attributes{type_info::attributes};
 		};
 
 		/**
@@ -2702,7 +2730,9 @@ namespace refl
 		{
 			static_assert(trait::is_member_v<MemberDescriptor>);
 			if constexpr (trait::is_property_v<MemberDescriptor>)
-			{ return std::is_invocable_v<MemberDescriptor, typename MemberDescriptor::declaring_type &, detail::placeholder>; }
+			{
+				return std::is_invocable_v<MemberDescriptor, typename MemberDescriptor::declaring_type &, detail::placeholder>;
+			}
 			else if constexpr (trait::is_field_v<MemberDescriptor>)
 			{
 				return !std::is_const_v<typename trait::remove_qualifiers_t<MemberDescriptor>::value_type>;
@@ -2774,7 +2804,10 @@ namespace refl
 			static_assert(trait::is_type_v<TypeDescriptor>);
 			constexpr size_t template_start = t.name.find('<');
 			constexpr size_t scope_last = t.name.rfind(':', template_start);
-			if constexpr (scope_last == const_string<0>::npos) { return t.name; }
+			if constexpr (scope_last == const_string<0>::npos)
+			{
+				return t.name;
+			}
 			else
 			{
 				return t.name.template substr<scope_last + 1, template_start - scope_last - 1>();
@@ -2820,7 +2853,10 @@ namespace refl
 			template <typename T, bool PreferUpper> constexpr auto normalize_bare_accessor_name()
 			{
 				constexpr auto str = T::name.template substr<3>();
-				if constexpr (str.data[0] == '_') { return str.template substr<1>(); }
+				if constexpr (str.data[0] == '_')
+				{
+					return str.template substr<1>();
+				}
 				else if constexpr (!PreferUpper && str.data[0] >= 'A' && str.data[0] <= 'Z')
 				{
 					return make_const_string(to_lower(str.data[0])) + str.template substr<1>();
@@ -2845,7 +2881,7 @@ namespace refl
 					constexpr bool cont_pascal = is_upper(t.name.data[3]);
 
 					if constexpr ((is_readable(T{}) && ((prefix == "Get" && cont_pascal) || (prefix == "get" && cont_snake_or_camel))) ||
-					              (is_writable(T{}) && ((prefix == "Set" && cont_pascal) || (prefix == "set" && cont_snake_or_camel))))
+								  (is_writable(T{}) && ((prefix == "Set" && cont_pascal) || (prefix == "set" && cont_snake_or_camel))))
 					{
 						constexpr bool prefer_upper = is_upper(prefix.data[0]);
 						return normalize_bare_accessor_name<T, prefer_upper>();
@@ -2866,7 +2902,9 @@ namespace refl
 				if constexpr (trait::is_property_v<T>)
 				{
 					if constexpr (util::get<attr::property>(t.attributes).friendly_name)
-					{ return REFL_MAKE_CONST_STRING(*util::get<attr::property>(t.attributes).friendly_name); }
+					{
+						return REFL_MAKE_CONST_STRING(*util::get<attr::property>(t.attributes).friendly_name);
+					}
 					else
 					{
 						return detail::normalize_accessor_name(t);
@@ -2931,11 +2969,14 @@ namespace refl
 		template <typename ReadableMember> constexpr auto has_writer(ReadableMember member)
 		{
 			static_assert(is_writable(member) || is_property(member));
-			if constexpr (is_writable(member)) { return true; }
+			if constexpr (is_writable(member))
+			{
+				return true;
+			}
 			else
 			{
 				return contains(get_declarator(member).members,
-				    [](auto m) { return is_property(m) && is_writable(m) && get_display_name_const(m) == get_display_name_const(ReadableMember{}); });
+					[](auto m) { return is_property(m) && is_writable(m) && get_display_name_const(m) == get_display_name_const(ReadableMember{}); });
 			}
 		}
 
@@ -2948,11 +2989,14 @@ namespace refl
 		template <typename WritableMember> constexpr auto has_reader(WritableMember member)
 		{
 			static_assert(is_readable(member) || is_property(member));
-			if constexpr (is_readable(member)) { return true; }
+			if constexpr (is_readable(member))
+			{
+				return true;
+			}
 			else
 			{
 				return contains(get_declarator(member).members,
-				    [](auto m) { return is_property(m) && is_readable(m) && get_display_name_const(m) == get_display_name_const(WritableMember{}); });
+					[](auto m) { return is_property(m) && is_readable(m) && get_display_name_const(m) == get_display_name_const(WritableMember{}); });
 			}
 		}
 
@@ -2965,12 +3009,15 @@ namespace refl
 		template <typename ReadableMember> constexpr auto get_writer(ReadableMember member)
 		{
 			static_assert(is_writable(member) || is_property(member));
-			if constexpr (is_writable(member)) { return member; }
+			if constexpr (is_writable(member))
+			{
+				return member;
+			}
 			else
 			{
 				static_assert(has_writer(member));
 				return find_one(get_declarator(member).members,
-				    [](auto m) { return is_property(m) && is_writable(m) && get_display_name_const(m) == get_display_name_const(ReadableMember{}); });
+					[](auto m) { return is_property(m) && is_writable(m) && get_display_name_const(m) == get_display_name_const(ReadableMember{}); });
 			}
 		}
 
@@ -2983,12 +3030,15 @@ namespace refl
 		template <typename WritableMember> constexpr auto get_reader(WritableMember member)
 		{
 			static_assert(is_readable(member) || is_property(member));
-			if constexpr (is_readable(member)) { return member; }
+			if constexpr (is_readable(member))
+			{
+				return member;
+			}
 			else
 			{
 				static_assert(has_reader(member));
 				return find_one(get_declarator(member).members,
-				    [](auto m) { return is_property(m) && is_readable(m) && get_display_name_const(m) == get_display_name_const(WritableMember{}); });
+					[](auto m) { return is_property(m) && is_readable(m) && get_display_name_const(m) == get_display_name_const(WritableMember{}); });
 			}
 		}
 
@@ -3050,7 +3100,10 @@ namespace refl
 			template <typename Member, typename... Members, typename... Results>
 			constexpr auto get_members_skip_shadowed(type_list<Member, Members...>, type_list<Results...>)
 			{
-				if constexpr ((... || (Results::name == Member::name))) { return get_members_skip_shadowed(type_list<Members...>{}, type_list<Results...>{}); }
+				if constexpr ((... || (Results::name == Member::name)))
+				{
+					return get_members_skip_shadowed(type_list<Members...>{}, type_list<Results...>{});
+				}
 				else
 				{
 					return get_members_skip_shadowed(type_list<Members...>{}, type_list<Results..., Member>{});
@@ -3125,13 +3178,13 @@ namespace refl
 		 */
 		template <typename Derived, typename Target>
 		struct REFL_DETAIL_FORCE_EBO proxy : public detail::function_proxies<proxy<Derived, Target>, detail::functions<Target>>,
-		                                     public detail::field_proxies<proxy<Derived, Target>, detail::fields<Target>>
+											 public detail::field_proxies<proxy<Derived, Target>, detail::fields<Target>>
 		{
 			static_assert(sizeof(detail::function_proxies<proxy<Derived, Target>, detail::functions<Target>>) == 1 &&
-			                  sizeof(detail::field_proxies<proxy<Derived, Target>, detail::fields<Target>>) == 1,
-			    "Multiple inheritance EBO did not kick in! "
-			    "You could try defining the REFL_DETAIL_FORCE_EBO macro appropriately to enable it on the required types. "
-			    "Default for MSC is `__declspec(empty_bases)`.");
+							  sizeof(detail::field_proxies<proxy<Derived, Target>, detail::fields<Target>>) == 1,
+				"Multiple inheritance EBO did not kick in! "
+				"You could try defining the REFL_DETAIL_FORCE_EBO macro appropriately to enable it on the required types. "
+				"Default for MSC is `__declspec(empty_bases)`.");
 
 			static_assert(trait::is_reflectable_v<Target>, "Target type must be reflectable!");
 
@@ -3164,10 +3217,10 @@ namespace refl
 			static std::false_type test(...);
 
 		public:
-			static constexpr bool value{ !std::is_reference_v<T> && decltype(test(std::declval<remove_qualifiers_t<T> *>()))::value };
+			static constexpr bool value{!std::is_reference_v<T> && decltype(test(std::declval<remove_qualifiers_t<T> *>()))::value};
 		};
 
-		template <typename T>[[maybe_unused]] static constexpr bool is_proxy_v{ is_proxy<T>::value };
+		template <typename T>[[maybe_unused]] static constexpr bool is_proxy_v{is_proxy<T>::value};
 	} // namespace trait
 
 	namespace runtime
@@ -3181,7 +3234,7 @@ namespace refl
 
 			template <typename CharT, typename T> std::false_type is_ostream_printable_test(...);
 
-			template <typename CharT, typename T> constexpr bool is_ostream_printable_v{ decltype(is_ostream_printable_test<CharT, T>(0))::value };
+			template <typename CharT, typename T> constexpr bool is_ostream_printable_v{decltype(is_ostream_printable_test<CharT, T>(0))::value};
 
 			namespace
 			{
@@ -3190,7 +3243,10 @@ namespace refl
 
 			template <typename CharT> void indent(std::basic_ostream<CharT> & os, int depth)
 			{
-				for (int i = 0; i < depth; i++) { os << "    "; }
+				for (int i = 0; i < depth; i++)
+				{
+					os << "    ";
+				}
 			}
 
 			template <typename CharT, typename T> void debug_impl(std::basic_ostream<CharT> & os, const T & value, [[maybe_unused]] int depth);
@@ -3221,7 +3277,10 @@ namespace refl
 						debug_impl(os, member(value), new_depth);
 					}
 
-					if (!compact || index + 1 != readable_members.size) { os << ", "; }
+					if (!compact || index + 1 != readable_members.size)
+					{
+						os << ", ";
+					}
 					if (!compact)
 					{
 						indent(os, depth);
@@ -3267,7 +3326,10 @@ namespace refl
 					indent(os, new_depth);
 
 					debug_impl(os, *it, new_depth);
-					if (std::next(it, 1) != end) { os << ", "; }
+					if (std::next(it, 1) != end)
+					{
+						os << ", ";
+					}
 					else if (!compact)
 					{
 						os << '\n';
@@ -3282,10 +3344,16 @@ namespace refl
 			{
 				using no_pointer_t = std::remove_pointer_t<T>;
 
-				if constexpr (std::is_same_v<bool, T>) { os << (value ? "true" : "false"); }
+				if constexpr (std::is_same_v<bool, T>)
+				{
+					os << (value ? "true" : "false");
+				}
 				else if constexpr (std::is_pointer_v<T> && !std::is_void_v<no_pointer_t> && trait::is_reflectable_v<no_pointer_t>)
 				{
-					if (value == nullptr) { os << "nullptr"; }
+					if (value == nullptr)
+					{
+						os << "nullptr";
+					}
 					else
 					{
 						os << '&';
@@ -3321,7 +3389,7 @@ namespace refl
 		template <typename CharT, typename T> void debug(std::basic_ostream<CharT> & os, const T & value, [[maybe_unused]] bool compact)
 		{
 			static_assert(trait::is_reflectable_v<T> || trait::is_container_v<T> || detail::is_ostream_printable_v<CharT, T>,
-			    "Type is not reflectable, not a container of reflectable types and does not support operator<<(std::ostream&, T)!");
+				"Type is not reflectable, not a container of reflectable types and does not support operator<<(std::ostream&, T)!");
 
 			detail::debug_impl(os, value, compact ? -1 : 0);
 		}
@@ -3370,7 +3438,7 @@ namespace refl
 
 			std::optional<U> result;
 
-			bool found{ false };
+			bool found{false};
 			for_each(type_descriptor::members, [&](auto member) {
 				using member_t = decltype(member);
 				if (found) return;
@@ -3388,11 +3456,14 @@ namespace refl
 				}
 			});
 
-			if (found) { return std::move(*result); }
+			if (found)
+			{
+				return std::move(*result);
+			}
 			else
 			{
 				throw std::runtime_error(std::string("The member ") + type_descriptor::name.str() + "::" + name +
-				                         " is not compatible with the provided parameters or return type, is not reflected or does not exist!");
+										 " is not compatible with the provided parameters or return type, is not reflected or does not exist!");
 			}
 		}
 
@@ -3488,7 +3559,10 @@ namespace refl::detail
 
 	template <typename T> constexpr auto get_type_name()
 	{
-		if constexpr (trait::is_reflectable_v<T>) { return type_descriptor<T>::name; }
+		if constexpr (trait::is_reflectable_v<T>)
+		{
+			return type_descriptor<T>::name;
+		}
 		else
 		{
 			return make_const_string("(unknown)");
@@ -3512,7 +3586,7 @@ namespace refl::detail
  * DeclType must be the name of one of the constraints defined in attr::usage.
  * __VA_ARGS__ is the list of attributes.
  */
-#define REFL_DETAIL_ATTRIBUTES(DeclType, ...) static constexpr auto attributes{ ::refl::detail::make_attributes<::refl::attr::usage::DeclType>(__VA_ARGS__) };
+#define REFL_DETAIL_ATTRIBUTES(DeclType, ...) static constexpr auto attributes{::refl::detail::make_attributes<::refl::attr::usage::DeclType>(__VA_ARGS__)};
 
 /**
  * Expands to the body of a type_info__ specialization.
@@ -3520,7 +3594,7 @@ namespace refl::detail
 #define REFL_DETAIL_TYPE_BODY(TypeName, ...)                                                                                                                   \
 	typedef REFL_DETAIL_GROUP TypeName type;                                                                                                                   \
 	REFL_DETAIL_ATTRIBUTES(type, __VA_ARGS__)                                                                                                                  \
-	static constexpr auto name{ ::refl::util::make_const_string(REFL_DETAIL_STR(REFL_DETAIL_GROUP TypeName)) };                                                \
+	static constexpr auto name{::refl::util::make_const_string(REFL_DETAIL_STR(REFL_DETAIL_GROUP TypeName))};                                                  \
 	static constexpr size_t member_index_offset = __COUNTER__ + 1;                                                                                             \
 	template <size_t, typename = void> struct member                                                                                                           \
 	{                                                                                                                                                          \
@@ -3574,7 +3648,7 @@ namespace refl::detail
  * REFL_END
  */
 #define REFL_END                                                                                                                                               \
-	static constexpr size_t member_count{ __COUNTER__ - member_index_offset };                                                                                 \
+	static constexpr size_t member_count{__COUNTER__ - member_index_offset};                                                                                   \
 	}                                                                                                                                                          \
 	;                                                                                                                                                          \
 	}
@@ -3583,15 +3657,15 @@ namespace refl::detail
 
 #define REFL_DETAIL_MEMBER_COMMON(MemberType_, MemberName_, ...)                                                                                               \
 	typedef ::refl::member::MemberType_ member_type;                                                                                                           \
-	static constexpr auto name{ ::refl::util::make_const_string(REFL_DETAIL_STR(MemberName_)) };                                                               \
+	static constexpr auto name{::refl::util::make_const_string(REFL_DETAIL_STR(MemberName_))};                                                                 \
 	REFL_DETAIL_ATTRIBUTES(MemberType_, __VA_ARGS__)
 
 /** Creates the support infrastructure needed for the refl::runtime::proxy type. */
 /*
-    There can be a total of 12 differently qualified member functions with the same name.
-    Providing remaps for non-const and const-only strikes a balance between compilation time and usability.
-    And even though there are many other remap implementation possibilities (like virtual, field variants),
-    adding them was considered to not be efficient from a compilation-time point of view.
+	There can be a total of 12 differently qualified member functions with the same name.
+	Providing remaps for non-const and const-only strikes a balance between compilation time and usability.
+	And even though there are many other remap implementation possibilities (like virtual, field variants),
+	adding them was considered to not be efficient from a compilation-time point of view.
 */
 #define REFL_DETAIL_MEMBER_PROXY(MemberName_)                                                                                                                  \
 	template <typename Proxy> struct remap                                                                                                                     \
@@ -3615,7 +3689,7 @@ namespace refl::detail
 		REFL_DETAIL_MEMBER_COMMON(field, FieldName_, __VA_ARGS__)                                                                                              \
 	public:                                                                                                                                                    \
 		typedef decltype(type::FieldName_) value_type;                                                                                                         \
-		static constexpr auto pointer{ &type::FieldName_ };                                                                                                    \
+		static constexpr auto pointer{&type::FieldName_};                                                                                                      \
 		REFL_DETAIL_MEMBER_PROXY(FieldName_);                                                                                                                  \
 	};
 
@@ -3629,7 +3703,7 @@ namespace refl::detail
 	public:                                                                                                                                                    \
 		template <typename Self, typename... Args>                                                                                                             \
 		static constexpr auto invoke(Self && self, Args &&... args)                                                                                            \
-		    ->decltype(::refl::detail::forward_cast<Self, type>(self).FunctionName_(::std::forward<Args>(args)...))                                            \
+			->decltype(::refl::detail::forward_cast<Self, type>(self).FunctionName_(::std::forward<Args>(args)...))                                            \
 		{                                                                                                                                                      \
 			return ::refl::detail::forward_cast<Self, type>(self).FunctionName_(::std::forward<Args>(args)...);                                                \
 		}                                                                                                                                                      \
@@ -3700,9 +3774,9 @@ REFL_END
 		template <size_t N> struct member                                                                                                                      \
 		{                                                                                                                                                      \
 		};                                                                                                                                                     \
-		static constexpr auto name{ ::refl::detail::get_type_name<T>() + ::refl::util::make_const_string(#Ptr) };                                              \
+		static constexpr auto name{::refl::detail::get_type_name<T>() + ::refl::util::make_const_string(#Ptr)};                                                \
 		static constexpr ::std::tuple<> attributes{};                                                                                                          \
-		static constexpr size_t member_count{ 0 };                                                                                                             \
+		static constexpr size_t member_count{0};                                                                                                               \
 	}
 
 namespace refl_impl
@@ -3768,7 +3842,10 @@ namespace refl::detail
 			for_each(type_list<std::integral_constant<size_t, Idx>...>{}, [&](auto idx_c) {
 				using idx_t = decltype(idx_c);
 				runtime::debug(os, std::get<idx_t::value>(t));
-				if constexpr (sizeof...(Idx) - 1 != idx_t::value) { os << convert<CharT>(", "); }
+				if constexpr (sizeof...(Idx) - 1 != idx_t::value)
+				{
+					os << convert<CharT>(", ");
+				}
 			});
 			os << CharT(')');
 		}
@@ -3832,39 +3909,39 @@ namespace refl::detail
 
 #ifndef REFL_NO_STD_SUPPORT
 
-REFL_TYPE(std::exception, debug{ refl::detail::write_exception() })
+REFL_TYPE(std::exception, debug{refl::detail::write_exception()})
 REFL_FUNC(what, property{})
 REFL_END
 
-REFL_TEMPLATE((typename Elem, typename Traits, typename Alloc), (std::basic_string<Elem, Traits, Alloc>), debug{ refl::detail::write_basic_string() })
+REFL_TEMPLATE((typename Elem, typename Traits, typename Alloc), (std::basic_string<Elem, Traits, Alloc>), debug{refl::detail::write_basic_string()})
 REFL_FUNC(size, property{})
 REFL_FUNC(data, property{})
 REFL_END
 
 #	ifdef __cpp_lib_string_view
 
-REFL_TEMPLATE((typename Elem, typename Traits), (std::basic_string_view<Elem, Traits>), debug{ refl::detail::write_basic_string_view() })
+REFL_TEMPLATE((typename Elem, typename Traits), (std::basic_string_view<Elem, Traits>), debug{refl::detail::write_basic_string_view()})
 REFL_FUNC(size, property{})
 REFL_FUNC(data, property{})
 REFL_END
 
 #	endif
 
-REFL_TEMPLATE((typename... Ts), (std::tuple<Ts...>), debug{ refl::detail::write_tuple() })
+REFL_TEMPLATE((typename... Ts), (std::tuple<Ts...>), debug{refl::detail::write_tuple()})
 REFL_END
 
-REFL_TEMPLATE((typename T, typename D), (std::unique_ptr<T, D>), debug{ refl::detail::write_unique_ptr() })
+REFL_TEMPLATE((typename T, typename D), (std::unique_ptr<T, D>), debug{refl::detail::write_unique_ptr()})
 REFL_END
 
-REFL_TEMPLATE((typename T), (std::shared_ptr<T>), debug{ refl::detail::write_shared_ptr() })
+REFL_TEMPLATE((typename T), (std::shared_ptr<T>), debug{refl::detail::write_shared_ptr()})
 REFL_END
 
-REFL_TEMPLATE((typename K, typename V), (std::pair<K, V>), debug{ refl::detail::write_pair() })
+REFL_TEMPLATE((typename K, typename V), (std::pair<K, V>), debug{refl::detail::write_pair()})
 REFL_END
 
 #	ifndef REFL_NO_STD_COMPLEX
 
-REFL_TEMPLATE((typename T), (std::complex<T>), debug{ refl::detail::write_complex() })
+REFL_TEMPLATE((typename T), (std::complex<T>), debug{refl::detail::write_complex()})
 REFL_END
 
 #	endif // !REFL_NO_STD_COMPLEX
@@ -3978,113 +4055,15 @@ REFL_END
 
 #	define REFL_DETAIL_FOR_EACH_NARG(...) REFL_DETAIL_FOR_EACH_NARG_(__VA_ARGS__, REFL_DETAIL_FOR_EACH_RSEQ_N())
 #	define REFL_DETAIL_FOR_EACH_NARG_(...) REFL_DETAIL_EXPAND(REFL_DETAIL_FOR_EACH_ARG_N(__VA_ARGS__))
-#	define REFL_DETAIL_FOR_EACH_ARG_N(_1,                                                                                                                     \
-	    _2,                                                                                                                                                    \
-	    _3,                                                                                                                                                    \
-	    _4,                                                                                                                                                    \
-	    _5,                                                                                                                                                    \
-	    _6,                                                                                                                                                    \
-	    _7,                                                                                                                                                    \
-	    _8,                                                                                                                                                    \
-	    _9,                                                                                                                                                    \
-	    _10,                                                                                                                                                   \
-	    _11,                                                                                                                                                   \
-	    _12,                                                                                                                                                   \
-	    _13,                                                                                                                                                   \
-	    _14,                                                                                                                                                   \
-	    _15,                                                                                                                                                   \
-	    _16,                                                                                                                                                   \
-	    _17,                                                                                                                                                   \
-	    _18,                                                                                                                                                   \
-	    _19,                                                                                                                                                   \
-	    _20,                                                                                                                                                   \
-	    _21,                                                                                                                                                   \
-	    _22,                                                                                                                                                   \
-	    _23,                                                                                                                                                   \
-	    _24,                                                                                                                                                   \
-	    _25,                                                                                                                                                   \
-	    _26,                                                                                                                                                   \
-	    _27,                                                                                                                                                   \
-	    _28,                                                                                                                                                   \
-	    _29,                                                                                                                                                   \
-	    _30,                                                                                                                                                   \
-	    _31,                                                                                                                                                   \
-	    _32,                                                                                                                                                   \
-	    _33,                                                                                                                                                   \
-	    _34,                                                                                                                                                   \
-	    _35,                                                                                                                                                   \
-	    _36,                                                                                                                                                   \
-	    _37,                                                                                                                                                   \
-	    _38,                                                                                                                                                   \
-	    _39,                                                                                                                                                   \
-	    _40,                                                                                                                                                   \
-	    _41,                                                                                                                                                   \
-	    _42,                                                                                                                                                   \
-	    _43,                                                                                                                                                   \
-	    _44,                                                                                                                                                   \
-	    _45,                                                                                                                                                   \
-	    _46,                                                                                                                                                   \
-	    _47,                                                                                                                                                   \
-	    _48,                                                                                                                                                   \
-	    _49,                                                                                                                                                   \
-	    _50,                                                                                                                                                   \
-	    _51,                                                                                                                                                   \
-	    _52,                                                                                                                                                   \
-	    _53,                                                                                                                                                   \
-	    _54,                                                                                                                                                   \
-	    _55,                                                                                                                                                   \
-	    _56,                                                                                                                                                   \
-	    _57,                                                                                                                                                   \
-	    _58,                                                                                                                                                   \
-	    _59,                                                                                                                                                   \
-	    _60,                                                                                                                                                   \
-	    _61,                                                                                                                                                   \
-	    _62,                                                                                                                                                   \
-	    _63,                                                                                                                                                   \
-	    _64,                                                                                                                                                   \
-	    _65,                                                                                                                                                   \
-	    _66,                                                                                                                                                   \
-	    _67,                                                                                                                                                   \
-	    _68,                                                                                                                                                   \
-	    _69,                                                                                                                                                   \
-	    _70,                                                                                                                                                   \
-	    _71,                                                                                                                                                   \
-	    _72,                                                                                                                                                   \
-	    _73,                                                                                                                                                   \
-	    _74,                                                                                                                                                   \
-	    _75,                                                                                                                                                   \
-	    _76,                                                                                                                                                   \
-	    _77,                                                                                                                                                   \
-	    _78,                                                                                                                                                   \
-	    _79,                                                                                                                                                   \
-	    _80,                                                                                                                                                   \
-	    _81,                                                                                                                                                   \
-	    _82,                                                                                                                                                   \
-	    _83,                                                                                                                                                   \
-	    _84,                                                                                                                                                   \
-	    _85,                                                                                                                                                   \
-	    _86,                                                                                                                                                   \
-	    _87,                                                                                                                                                   \
-	    _88,                                                                                                                                                   \
-	    _89,                                                                                                                                                   \
-	    _90,                                                                                                                                                   \
-	    _91,                                                                                                                                                   \
-	    _92,                                                                                                                                                   \
-	    _93,                                                                                                                                                   \
-	    _94,                                                                                                                                                   \
-	    _95,                                                                                                                                                   \
-	    _96,                                                                                                                                                   \
-	    _97,                                                                                                                                                   \
-	    _98,                                                                                                                                                   \
-	    _99,                                                                                                                                                   \
-	    _100,                                                                                                                                                  \
-	    N,                                                                                                                                                     \
-	    ...)                                                                                                                                                   \
+#	define REFL_DETAIL_FOR_EACH_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25,     \
+		_26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55,  \
+		_56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85,  \
+		_86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, _100, N, ...)                                                                    \
 		N
 #	define REFL_DETAIL_FOR_EACH_RSEQ_N()                                                                                                                      \
 		100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64,   \
-		    63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28,    \
-		    27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+			63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28,    \
+			27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 #	define REFL_DETAIL_CONCATENATE(x, y) x##y
 #	define REFL_DETAIL_FOR_EACH_(N, what, ...) REFL_DETAIL_EXPAND(REFL_DETAIL_CONCATENATE(REFL_DETAIL_FOR_EACH_, N)(what, __VA_ARGS__))
 #	define REFL_DETAIL_FOR_EACH(what, ...) REFL_DETAIL_FOR_EACH_(REFL_DETAIL_FOR_EACH_NARG(__VA_ARGS__), what, __VA_ARGS__)

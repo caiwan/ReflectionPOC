@@ -112,8 +112,21 @@ namespace Grafkit::Serializer
 		template <class T> static void Load(SerializerBase & s, T *& obj);
 		template <class T> static void Store(const SerializerBase & s, T * const & obj);
 
-		template <class T> static void Load(SerializerBase & ar, std::shared_ptr<T> & obj) { Load(ar, obj.get()); }
+		template <class T> static void Load(SerializerBase & ar, std::shared_ptr<T> & obj)
+		{
+			T * pT = nullptr;
+			Load(ar, pT);
+			obj = pT;
+		}
 		template <class T> static void Store(const SerializerBase & ar, const std::shared_ptr<T> & obj) { Store(ar, obj.get()); }
+
+		template <class T> static void Load(SerializerBase & ar, std::unique_ptr<T> & obj)
+		{
+			T * pT = nullptr;
+			Load(ar, pT);
+			obj = pT;
+		}
+		template <class T> static void Store(const SerializerBase & ar, const std::unique_ptr<T> & obj) { Store(ar, obj.get()); }
 
 		static Dynamics & Instance()
 		{
@@ -145,14 +158,55 @@ namespace Grafkit::Serializer
 
 	template <class T> void Dynamics::Load(SerializerBase & s, T *& obj)
 	{
-		//static_assert(Traits::has_dynamics_invoke_serialization_read_v<T>);
-		obj->_DynamicsInvokeSerializationRead(s);
+		std::string clazzName;
+
+		s >> clazzName;
+
+		if (clazzName.empty())
+		{
+			obj = nullptr;
+		}
+		else
+		{
+			DynamicObject * const dynamicObj = Instance().Create(clazzName.c_str());
+			T * const typedObj = dynamic_cast<T *>(dynamicObj);
+
+			if (!typedObj || !dynamicObj)
+			{
+				throw std::runtime_error("Cannot instantiate class: Given <T> is not Serializable or defined in dynamics");
+			}
+
+			Utils::Checksum::ChecksumType checksum;
+			s >> checksum;
+
+			if (checksum != typedObj->obj->_DynamicsGetClazzChecksum().value())
+			{
+				throw std::runtime_error("Checksum mismatch");
+			}
+
+			// static_assert(Traits::has_dynamics_invoke_serialization_read_v<T>);
+			typedObj->_DynamicsInvokeSerializationRead(s);
+			obj = typedObj;
+		}
 	}
 
 	template <class T> void Dynamics::Store(const SerializerBase & s, T * const & obj)
 	{
-		//static_assert(Traits::has_dynamics_invoke_serialization_write_v<T>);
-		obj->_DynamicsInvokeSerializationWrite(s, obj);
+		if (obj == nullptr)
+		{
+			s << 0;
+		}
+		else
+		{
+			// static_assert(Traits::has_dynamics_invoke_serialization_write_v<T>);
+
+			const auto clazzName = obj->_DynamicsGetClazzName();
+			const auto clazzChecksum = obj->_DynamicsGetClazzChecksum().value();
+
+			s << clazzName << clazzChecksum;
+
+			obj->_DynamicsInvokeSerializationWrite(s, obj);
+		}
 	}
 
 	inline DynamicObject * Dynamics::Create(const char * className) const

@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 #include <algorithm>
 #include <type_traits>
 //
@@ -6,6 +6,7 @@
 //
 #include <Serialization/Crc32.h>
 //
+#include <Serialization/Dynamics.h>
 #include <Serialization/EndianSwapper.h>
 #include <Serialization/Signature.h>
 #include <Serialization/Stream.h>
@@ -28,7 +29,7 @@ namespace Grafkit::Serializer
 
 	protected:
 		// Write
-		template <typename Type> void Write(const Type & value) 
+		template <typename Type> void Write(const Type & value)
 		{
 			assert(stream);
 
@@ -36,7 +37,7 @@ namespace Grafkit::Serializer
 			if constexpr (std::is_arithmetic_v<Type>)
 			{
 				const Type endianCorrectedValue = Swap(value);
-				stream.Write((const char *)&endianCorrectedValue, sizeof(Type));
+				stream.Write(reinterpret_cast<const char *>(&endianCorrectedValue), sizeof(Type));
 				assert(stream.IsSuccess()); // Todo: throw error
 			}
 			else if constexpr (std::is_enum_v<Type>)
@@ -48,8 +49,7 @@ namespace Grafkit::Serializer
 			// ---
 			else if constexpr (Traits::is_pointer_like_v<Type>)
 			{
-				// TODO Check if not a pointer to an arithmetic type
-				// TODO Invoke persistence API
+				Dynamics::Instance().Store(value);
 			}
 
 			// --- Wired-in std::string (and any other string-based type) support
@@ -86,7 +86,7 @@ namespace Grafkit::Serializer
 				constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 				Write(checksum.value());
 
-				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
+				constexpr auto members = refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
 				refl::util::for_each(members, [&](auto member) {
 					const auto & memberValue = member(value);
 					Write(memberValue);
@@ -99,14 +99,14 @@ namespace Grafkit::Serializer
 		}
 
 		// Array support
-		template <class T, size_t N> void Write(const T (&value)[N]) 
+		template <class T, size_t N> void Write(const T (&value)[N])
 		{
 			const auto length = static_cast<SizeType>(N);
 			Write(length);
 			for (const auto & item : value) Write(item);
 		}
 
-		template <class T, size_t N> void Write(const std::array<T, N> & value) 
+		template <class T, size_t N> void Write(const std::array<T, N> & value)
 		{
 			const auto length = static_cast<SizeType>(N);
 			Write(length);
@@ -116,7 +116,7 @@ namespace Grafkit::Serializer
 		// --------------------------------------------------------
 
 		// Read
-		template <typename Type> void Read(Type & value) const 
+		template <typename Type> void Read(Type & value) const
 		{
 			assert(stream);
 			// ---
@@ -138,8 +138,7 @@ namespace Grafkit::Serializer
 			// ---
 			else if constexpr (Traits::is_pointer_like_v<Type>)
 			{
-				// TODO Check if not a pointer to an arithmetic type
-				// TODO Invoke persistence API
+				Dynamics::Instance().Load(value);
 			}
 
 			// -- Wired-in std::string support
@@ -224,10 +223,21 @@ namespace Grafkit::Serializer
 				{
 					throw std::runtime_error("Checksum does not match");
 				}
-				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
+				constexpr auto members = refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
 				refl::util::for_each(members, [&](auto member) {
-					auto & memberValue = member(value);
-					Read(memberValue);
+					typedef decltype(member) DescriptorType;
+
+					if constexpr (Traits::is_serializable_field(member))
+					{
+						auto & memberValue = member(value);
+						Read(memberValue);
+					}
+					else if constexpr (Traits::is_serializable_setter(member))
+					{
+						DescriptorType::return_type<Type> memberValue;
+						Read(memberValue);
+						member(value, memberValue);
+					}
 				});
 			}
 			else
@@ -236,7 +246,7 @@ namespace Grafkit::Serializer
 			}
 		}
 
-		template <class T, size_t N> void Read(T (&value)[N]) const 
+		template <class T, size_t N> void Read(T (&value)[N]) const
 		{
 			SizeType length = 0;
 			Read(length);
@@ -244,7 +254,7 @@ namespace Grafkit::Serializer
 			for (auto & item : value) Read(item);
 		}
 
-		template <class T, size_t N> void Read(std::array<T, N> & value) const 
+		template <class T, size_t N> void Read(std::array<T, N> & value) const
 		{
 			SizeType length = 0;
 			Read(length);
@@ -264,7 +274,5 @@ namespace Grafkit::Serializer
 		// Otherwise we would have to store the size_t length in the file and take extra measures.
 		static_assert(sizeof(SizeType) >= sizeof(size_t), "SizeType has to be compatible with size_t");
 	};
-	
-	
-} // namespace Grafkit::Serializer
 
+} // namespace Grafkit::Serializer

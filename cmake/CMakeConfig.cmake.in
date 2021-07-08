@@ -1,15 +1,17 @@
-get_filename_component(JSONUTILS_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(@ROOT_PROJECT_SNAKE_CASE@_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include(CMakeFindDependencyMacro)
 
-list(APPEND CMAKE_MODULE_PATH ${JSONUTILS_CMAKE_DIR})
-# NOTE: to find FindRapidJSON.cmake
-find_dependency(RapidJSON @MIN_RapidJSON_VERSION@)
+# Find targets
+list(APPEND CMAKE_MODULE_PATH ${@ROOT_PROJECT_SNAKE_CASE@_CMAKE_DIR})
+find_dependency(nlohmann_json::nlohmann_json)
+
 list(REMOVE_AT CMAKE_MODULE_PATH -1)
 
-find_dependency(boost_regex @MIN_BOOST_VERSION@)
+# List of all targets
+set(@ROOT_PROJECT_SNAKE_CASE@_LIBRARIES @PROJECT_EXPORTED_LIBRARIES@)
 
-if(NOT TARGET JSONUtils::JSONUtils)
-    include("${JSONUTILS_CMAKE_DIR}/JSONUtilsTargets.cmake")
+# Main target
+list(GET @ROOT_PROJECT_SNAKE_CASE@_LIBRARIES 0 @ROOT_PROJECT_SNAKE_CASE@_MAIN_TARGET)
+if(NOT TARGET ${@ROOT_PROJECT_SNAKE_CASE@_MAIN_TARGET})
+    include("${@ROOT_PROJECT_SNAKE_CASE@_CMAKE_DIR}/@ROOT_PROJECT@Targets.cmake")
 endif()
-
-set(JSONUTILS_lIBRARIES JSONUtils::JSONUtils)

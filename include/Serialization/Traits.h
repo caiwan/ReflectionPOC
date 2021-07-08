@@ -11,33 +11,12 @@ namespace Grafkit
 	namespace Attributes
 	{
 
+		using Property = refl::attr::property;
+
 		/**
 		 * Marker for fields to be serialized
 		 */
-		struct Serializable : refl::attr::usage::field
-		{
-		};
-
-		/**
-		 * Members to be called before serialization begins
-		 */
-		struct OnBeforeSerialize : refl::attr::usage::function
-		{
-			// TODO: Read, write, readwrite
-		};
-
-		/**
-		 * Members to be called after serialization is done
-		 */
-		struct OnAfterSerialize : refl::attr::usage::function
-		{
-			// TODO: Read, write, readwrite
-		};
-
-		/**
-		 * Marker for types to be registered to be dynamically constructed
-		 */
-		struct RegisteredType : refl::attr::usage::type
+		struct Serializable : refl::attr::usage::member
 		{
 		};
 
@@ -229,16 +208,24 @@ namespace Grafkit
 		/**
 		 *
 		 */
-		// TODO: This has to be renamed to something else
 
-		template <typename T> static constexpr bool is_field(const T & t) { return refl::descriptor::is_field(t); }
-
-		template <typename T> static constexpr bool is_serializable(const T & t) { return refl::descriptor::has_attribute<Attributes::Serializable>(t); }
-
-		template <typename T> static constexpr bool is_serializable_field(const T & t)
+		template <typename T> static constexpr bool is_serializable(const T & t)
 		{
-			return refl::descriptor::is_readable(t) && Traits::is_field(t) && Traits::is_serializable(t);
+			return (refl::descriptor::is_field(t) || refl::descriptor::is_property(t)) && refl::descriptor::has_attribute<Attributes::Serializable>(t);
+		}
+
+		template <typename T> static constexpr bool is_serializable_field(const T & t) { return is_serializable(t) && refl::descriptor::is_field(t); }
+
+		template <typename T> static constexpr bool is_serializable_getter(const T & t)
+		{
+			return is_serializable(t) && refl::descriptor::is_function(t) && refl::descriptor::is_readable(t);
+		}
+
+		template <typename T> static constexpr bool is_serializable_setter(const T & t)
+		{
+			return is_serializable(t) && refl::descriptor::is_function(t) && refl::descriptor::is_writable(t);
 		}
 
 	} // namespace Traits
+
 } // namespace Grafkit

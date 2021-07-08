@@ -119,34 +119,73 @@ namespace Grafkit
 #undef GK_CREATE_TYPE_NAME_RESOLVE_STL
 #undef GK_CREATE_TYPE_NAME_RESOLVE_STL_2
 
-		// ---
-		template <typename MemberType> static constexpr auto MakeMemberLine(const MemberType & member)
+		namespace Impl
 		{
-			// TODO: value_type + member_type - use whichever is available
-			return type_name<typename MemberType::value_type>::value + refl::make_const_string(' ') + member.name + refl::make_const_string("; ");
-		}
 
-		template <typename Type> static constexpr auto CalcString()
-		{
-			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_field(member); });
-			return refl::util::accumulate(
-				members, [](const auto accumulated, const auto member) { return accumulated + MakeMemberLine(member); }, refl::make_const_string());
-			// TODO: Remove trailing space
-		};
+			// ---
+			template <typename MemberType> static constexpr auto MakeFieldLine(const MemberType & member)
+			{
+				return type_name<typename MemberType::value_type>::value + refl::make_const_string(' ') + member.name + refl::make_const_string("; ");
+			}
 
-		// ---
-		template <typename MemberType> static constexpr Checksum MakeMemberChecksum(const MemberType & member)
-		{
-			// TODO: has_value_type + member_type - use whichever is available
-			return Checksum(type_name<typename MemberType::value_type>::value.data) ^ Checksum(' ') ^ Checksum(member.name.data) ^ Checksum("; ");
-		}
+			template <typename ParentType, typename FunctionType> static constexpr auto MakePropertyLine(const FunctionType & member)
+			{
+				return type_name<typename FunctionType::return_type<ParentType>>::value + refl::make_const_string(' ') +
+					   refl::descriptor::get_display_name_const(member) + refl::make_const_string("; ");
+			}
 
-		template <typename Type> static constexpr Checksum CalcChecksum()
+			template <typename Type> static constexpr auto CalcStringFields()
+			{
+				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
+				return refl::util::accumulate(
+					members, [](const auto accumulated, const auto member) { return accumulated + MakeFieldLine(member); }, refl::make_const_string());
+			};
+
+			template <typename Type> static constexpr auto CalcStringProperties()
+			{
+				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_getter(member); });
+				return refl::util::accumulate(
+					members, [](const auto accumulated, const auto member) { return accumulated + MakePropertyLine<Type>(member); }, refl::make_const_string());
+			};
+
+		} // namespace Impl
+
+		// TODO: Remove trailing space
+		template <typename Type> static constexpr auto CalcString() { return Impl::CalcStringFields<Type>() + Impl::CalcStringProperties<Type>(); }
+
+		namespace Impl
 		{
-			constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_field(member); });
-			return refl::util::accumulate(
-				members, [](const auto checksum, const auto member) { return checksum ^ MakeMemberChecksum(member); }, Checksum());
-		}
+
+			template <typename MemberType> static constexpr Checksum MakeFieldChecksum(const MemberType & member)
+			{
+				return Checksum(type_name<typename MemberType::value_type>::value.data) ^ Checksum(' ') ^ Checksum(member.name.data) ^ Checksum("; ");
+			}
+
+			template <typename ParentType, typename MemberType> static constexpr Checksum MakePropertyChecksum(const MemberType & member)
+			{
+				return Checksum(type_name<typename MemberType::return_type<ParentType>>::value.data) ^ Checksum(' ') ^
+					   Checksum(refl::descriptor::get_display_name_const(member).data) ^ Checksum("; ");
+			}
+
+			template <typename Type> static constexpr Checksum CalcFieldChecksum()
+			{
+				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
+				return refl::util::accumulate(
+					members, [](const auto checksum, const auto member) { return checksum ^ MakeFieldChecksum(member); }, Checksum());
+			}
+
+			template <typename Type> static constexpr Checksum CalcPropertyChecksum()
+			{
+				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_getter(member); });
+				return refl::util::accumulate(
+					members, [](const auto checksum, const auto member) { return checksum ^ MakePropertyChecksum<Type>(member); }, Checksum());
+			}
+
+		} // namespace Impl
+
+		// TODO: Remove trailing space
+
+		template <typename Type> static constexpr Checksum CalcChecksum() { return Impl::CalcFieldChecksum<Type>() ^ Impl::CalcPropertyChecksum<Type>(); }
 
 	} // namespace Utils::Signature
 } // namespace Grafkit

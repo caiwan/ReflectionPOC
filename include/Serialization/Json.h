@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 #include <algorithm>
 #include <type_traits>
 //
@@ -53,8 +53,7 @@ namespace Grafkit
 				// ---
 				else if constexpr (Traits::is_pointer_like_v<Type>)
 				{
-					// TODO Check if not a pointer to an arithmetic type
-					// TODO Invoke persistence API
+					Dynamics::Instance().Store(value);
 				}
 
 				// --- STL-like container support
@@ -82,11 +81,22 @@ namespace Grafkit
 					jsonNode = {};
 					jsonNode["_checksum"] = checksum.value();
 
-					constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
+					constexpr auto members =
+						refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
 					refl::util::for_each(members, [&](auto member) {
-						const auto & memberValue = member(value);
-						jsonNode[member.name.c_str()] = {};
-						Write(memberValue, jsonNode[member.name.c_str()]);
+						if constexpr (Traits::is_serializable_field(member))
+						{
+							const auto & memberValue = member(value);
+							jsonNode[member.name.c_str()] = {};
+							Write(memberValue, jsonNode[member.name.c_str()]);
+						}
+						else if constexpr (Traits::is_serializable_getter(member))
+						{
+							constexpr auto propertyName = refl::descriptor::get_display_name_const(member);
+							const auto & memberValue = member(value);
+							jsonNode[propertyName.c_str()] = {};
+							Write(memberValue, jsonNode[propertyName.data]);
+						}
 					});
 				}
 				else
@@ -133,8 +143,7 @@ namespace Grafkit
 				// ---
 				else if constexpr (Traits::is_pointer_like_v<Type>)
 				{
-					// TODO Check if not a pointer to an arithmetic type
-					// TODO Invoke persistence API
+					Dynamics::Instance().Load(value);
 				}
 
 				// STL-like container support
@@ -190,11 +199,23 @@ namespace Grafkit
 
 					if (checksum != readChecksum) throw std::runtime_error("Checksum does not match");
 
-					constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
+					constexpr auto members =
+						refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
 
 					refl::util::for_each(members, [&](auto member) {
-						auto & memberValue = member(value);
-						Read(memberValue, jsonNode[member.name.c_str()]);
+						typedef decltype(member) DescriptorType;
+
+						if constexpr (Traits::is_serializable_field(member))
+						{
+							auto & memberValue = member(value);
+							Read(memberValue, jsonNode[member.name.c_str()]);
+						}
+						else if constexpr (Traits::is_serializable_setter(member))
+						{
+							DescriptorType::return_type<Type> memberValue;
+							Read(memberValue, jsonNode[refl::descriptor::get_display_name(member)]);
+							member(value, memberValue);
+						}
 					});
 				}
 				else

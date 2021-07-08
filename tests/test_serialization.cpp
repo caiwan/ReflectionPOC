@@ -51,6 +51,8 @@ REFL_FIELD(end, Serializable())
 REFL_FUNC(length)
 REFL_END
 
+// --- 
+
 struct ValidateBinarySerializer
 {
 	using Serializer = Grafkit::BinarySerializer;
@@ -125,6 +127,8 @@ struct ValidateJsonSerializer
 	}
 };
 
+ // --- 
+
 template <class SerializerValidator> class TestSerialization : public testing::Test, public SerializerValidator
 {
 };
@@ -134,7 +138,11 @@ typedef testing::Types<
 	ValidateJsonSerializer>
 	SerializerTestImplementations;
 
+// --- 
+
 TYPED_TEST_CASE(TestSerialization, SerializerTestImplementations);
+
+// --- 
 
 TYPED_TEST(TestSerialization, PlainOldData)
 {

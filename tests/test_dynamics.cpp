@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 using Serializable = Grafkit::Attributes::Serializable;
-using RegisteredType = Grafkit::Attributes::RegisteredType;
 using DynamicObject = Grafkit::Serializer::DynamicObject;
 
 class DummyClass : public DynamicObject
