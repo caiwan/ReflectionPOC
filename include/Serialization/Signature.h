@@ -48,7 +48,7 @@ namespace Grafkit
 			Struct,
 		};
 
-		template <typename T, typename = void> struct type_name
+		template <typename T, typename = void> struct FindTypeName
 		{
 			static constexpr auto myName()
 			{
@@ -62,12 +62,12 @@ namespace Grafkit
 				}
 			}
 
-			static constexpr auto value = type_name::myName();
+			static constexpr auto value = FindTypeName::myName();
 			static constexpr ETypeIdentifier typeIdentifier = ETypeIdentifier::Invalid;
 		};
 
 #define GK_CREATE_TYPE_NAME_RESOLVE_BASE_TYPES(TYPE, ID)                                                                                                       \
-	template <> struct type_name<TYPE>                                                                                                                         \
+	template <> struct FindTypeName<TYPE>                                                                                                                      \
 	{                                                                                                                                                          \
 		static constexpr refl::const_string value = refl::make_const_string(#TYPE);                                                                            \
 		static constexpr Grafkit::Utils::Signature::ETypeIdentifier typeIdentifier = ID;                                                                       \
@@ -89,19 +89,19 @@ namespace Grafkit
 		GK_CREATE_TYPE_NAME_RESOLVE_BASE_TYPES(std::string, Grafkit::Utils::Signature::ETypeIdentifier::String);
 
 #define GK_CREATE_TYPE_NAME_RESOLVE_STL(TYPE, ID)                                                                                                              \
-	template <typename T> struct type_name<TYPE<T>>                                                                                                            \
+	template <typename T> struct FindTypeName<TYPE<T>>                                                                                                         \
 	{                                                                                                                                                          \
 		static constexpr refl::const_string value =                                                                                                            \
-			refl::make_const_string(#TYPE) + refl::make_const_string('<') + Grafkit::Utils::Signature::type_name<T>::value + refl::make_const_string('>');     \
+			refl::make_const_string(#TYPE) + refl::make_const_string('<') + Grafkit::Utils::Signature::FindTypeName<T>::value + refl::make_const_string('>');  \
 		static constexpr Grafkit::Utils::Signature::ETypeIdentifier typeIdentifier = ID;                                                                       \
 	}
 
 #define GK_CREATE_TYPE_NAME_RESOLVE_STL_2(TYPE, ID)                                                                                                            \
-	template <typename T, typename U> struct type_name<TYPE<T, U>>                                                                                             \
+	template <typename T, typename U> struct FindTypeName<TYPE<T, U>>                                                                                          \
 	{                                                                                                                                                          \
 		static constexpr refl::const_string value = refl::make_const_string(#TYPE) + refl::make_const_string('<') +                                            \
-													Grafkit::Utils::Signature::type_name<T>::value + refl::make_const_string(", ") +                           \
-													Grafkit::Utils::Signature::type_name<U>::value + refl::make_const_string('>');                             \
+													Grafkit::Utils::Signature::FindTypeName<T>::value + refl::make_const_string(", ") +                        \
+													Grafkit::Utils::Signature::FindTypeName<U>::value + refl::make_const_string('>');                          \
 		static constexpr Grafkit::Utils::Signature::ETypeIdentifier typeIdentifier = ID;                                                                       \
 	}
 
@@ -121,71 +121,83 @@ namespace Grafkit
 
 		namespace Impl
 		{
-
-			// ---
-			template <typename MemberType> static constexpr auto MakeFieldLine(const MemberType & member)
-			{
-				return type_name<typename MemberType::value_type>::value + refl::make_const_string(' ') + member.name + refl::make_const_string("; ");
-			}
-
-			template <typename ParentType, typename FunctionType> static constexpr auto MakePropertyLine(const FunctionType & member)
-			{
-				return type_name<typename FunctionType::return_type<ParentType>>::value + refl::make_const_string(' ') +
-					   refl::descriptor::get_display_name_const(member) + refl::make_const_string("; ");
-			}
-
-			template <typename Type> static constexpr auto CalcStringFields()
+			template <typename Type> static constexpr auto CalcFieldsString()
 			{
 				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
 				return refl::util::accumulate(
-					members, [](const auto accumulated, const auto member) { return accumulated + MakeFieldLine(member); }, refl::make_const_string());
-			};
+					members,
+					[](const auto accumulated, const auto member) {
+						using Descriptor = decltype(member);
+						constexpr auto typeName = FindTypeName<typename Descriptor::value_type>::value;
+						constexpr auto name = member.name;
+						return accumulated + typeName + refl::make_const_string(' ') + name + refl::make_const_string("; ");
+					},
+					refl::make_const_string());
+			}
 
-			template <typename Type> static constexpr auto CalcStringProperties()
+			template <typename Type> static constexpr auto CalcGettersString()
 			{
 				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_getter(member); });
 				return refl::util::accumulate(
-					members, [](const auto accumulated, const auto member) { return accumulated + MakePropertyLine<Type>(member); }, refl::make_const_string());
-			};
+					members,
+					[](const auto accumulated, const auto member) {
+						using Descriptor = decltype(member);
+						constexpr auto typeName = FindTypeName<typename Descriptor::template return_type<Type>>::value;
+						constexpr auto name = refl::descriptor::get_display_name_const(member);
+						return accumulated + typeName + refl::make_const_string(' ') + name + refl::make_const_string("; ");
+					},
+					refl::make_const_string());
+			}
 
 		} // namespace Impl
 
 		// TODO: Remove trailing space
-		template <typename Type> static constexpr auto CalcString() { return Impl::CalcStringFields<Type>() + Impl::CalcStringProperties<Type>(); }
+		template <typename Type> static constexpr auto CalcString()
+		{
+			// The only wat to do this the semi-right way to process the fields nad the getters/setters separately
+			return Impl::CalcFieldsString<Type>() + Impl::CalcGettersString<Type>();
+		}
 
 		namespace Impl
 		{
-
-			template <typename MemberType> static constexpr Checksum MakeFieldChecksum(const MemberType & member)
-			{
-				return Checksum(type_name<typename MemberType::value_type>::value.data) ^ Checksum(' ') ^ Checksum(member.name.data) ^ Checksum("; ");
-			}
-
-			template <typename ParentType, typename MemberType> static constexpr Checksum MakePropertyChecksum(const MemberType & member)
-			{
-				return Checksum(type_name<typename MemberType::return_type<ParentType>>::value.data) ^ Checksum(' ') ^
-					   Checksum(refl::descriptor::get_display_name_const(member).data) ^ Checksum("; ");
-			}
 
 			template <typename Type> static constexpr Checksum CalcFieldChecksum()
 			{
 				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_field(member); });
 				return refl::util::accumulate(
-					members, [](const auto checksum, const auto member) { return checksum ^ MakeFieldChecksum(member); }, Checksum());
+					members,
+					[](const auto checksum, const auto member) {
+						using Descriptor = decltype(member);
+						constexpr auto typeName = FindTypeName<typename Descriptor::value_type>::value;
+						constexpr auto name = member.name;
+						return checksum ^ Checksum(typeName.data) ^ Checksum(' ') ^ Checksum(name.data) ^ Checksum("; ");
+					},
+					Checksum());
 			}
 
-			template <typename Type> static constexpr Checksum CalcPropertyChecksum()
+			template <typename Type> static constexpr Checksum CalcGetterChecksum()
 			{
 				constexpr auto members = filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_getter(member); });
 				return refl::util::accumulate(
-					members, [](const auto checksum, const auto member) { return checksum ^ MakePropertyChecksum<Type>(member); }, Checksum());
+					members,
+					[](const auto checksum, const auto member) {
+						using Descriptor = decltype(member);
+						constexpr auto typeName = FindTypeName<typename Descriptor::template return_type<Type>>::value;
+						constexpr auto name = refl::descriptor::get_display_name_const(member);
+						return checksum ^Checksum(typeName.data) ^ Checksum(' ') ^ Checksum(name.data) ^ Checksum("; ");
+					},
+					Checksum());
 			}
-
+			
 		} // namespace Impl
 
 		// TODO: Remove trailing space
 
-		template <typename Type> static constexpr Checksum CalcChecksum() { return Impl::CalcFieldChecksum<Type>() ^ Impl::CalcPropertyChecksum<Type>(); }
+		template <typename Type> static constexpr Checksum CalcChecksum()
+		{
+			// The only wat to do this the semi-right way to process the fields nad the getters/setters separately
+			return Impl::CalcFieldChecksum<Type>() ^ Impl::CalcGetterChecksum<Type>();
+		}
 
 	} // namespace Utils::Signature
 } // namespace Grafkit

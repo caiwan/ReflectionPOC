@@ -9,95 +9,13 @@
 #include <Serialization/SerializerBase.h>
 #include <Serialization/Traits.h>
 
-namespace Grafkit
-{
-	class Archive;
-	class SerializerBase;
-
-	namespace Traits
-	{
-#ifndef GK_MSVC_SFINAE_HAS_FN_WORKAROUND
-		/**
-		 * Has push_back
-		 * @tparam T
-		 */
-
-		template <typename T, typename = void> struct has_dynamics_invoke_serialization_read_t : std::false_type
-		{
-		};
-
-		template <typename T>
-		struct has_dynamics_invoke_serialization_read_t<T,
-			std::void_t<decltype(static_cast<void (T::*)(const SerializerBase &)>(&T::_DynamicsInvokeSerializationRead))>> : std::true_type
-		{
-		};
-
-#else
-		GK_MSVC_SFINAE_HAS_FN_WORKAROUND(_DynamicsInvokeSerializationRead);
-		// To be able to befriend
-		template <typename T> struct has_dynamics_invoke_serialization_read_t : test_has__DynamicsInvokeSerializationRead<T, void(const SerializerBase &)>
-		{
-		};
-
-#endif
-		template <typename T> using has_dynamics_invoke_serialization_read = has_dynamics_invoke_serialization_read_t<T>;
-		template <typename T> constexpr bool has_dynamics_invoke_serialization_read_v = has_dynamics_invoke_serialization_read<T>::value;
-
-#ifndef GK_MSVC_SFINAE_HAS_FN_WORKAROUND
-		/**
-		 * Has push_back
-		 * @tparam T
-		 */
-
-		template <typename T, typename = void> struct has_dynamics_invoke_serialization_write : std::false_type
-		{
-		};
-
-		template <typename T>
-		struct has_dynamics_invoke_serialization_write<T,
-			std::void_t<decltype(static_cast<void (T::*)(SerializerBase &)>(&T::_DynamicsInvokeSerializationWrite))>> : std::true_type
-		{
-		};
-
-#else
-		GK_MSVC_SFINAE_HAS_FN_WORKAROUND(_DynamicsInvokeSerializationWrite);
-
-		// To be able to befriend
-		template <typename T> struct has_dynamics_invoke_serialization_write_t : test_has__DynamicsInvokeSerializationWrite<T, void(SerializerBase &)>
-		{
-		};
-
-#endif
-
-		template <typename T> using has_dynamics_invoke_serialization_write = has_dynamics_invoke_serialization_write_t<T>;
-		template <typename T> constexpr bool has_dynamics_invoke_serialization_write_v = has_dynamics_invoke_serialization_write<T>::value;
-
-	} // namespace Traits
-
-} // namespace Grafkit
-
 namespace Grafkit::Serializer
 {
 
 	class Dynamics;
 	class AddFactory;
 
-	class DynamicObject
-	{
-		friend class Dynamics;
-		template <typename T> friend struct Traits::has_dynamics_invoke_serialization_write_t;
-		template <typename T> friend struct Traits::has_dynamics_invoke_serialization_read_t;
-
-	public:
-		virtual ~DynamicObject() = default;
-
-	private:
-		friend class Dynamics;
-		virtual std::string_view _DynamicsGetClazzName() = 0;
-		virtual Utils::Checksum _DynamicsGetClazzChecksum() = 0;
-		virtual void _DynamicsInvokeSerializationRead(const SerializerBase & s) = 0;
-		virtual void _DynamicsInvokeSerializationWrite(SerializerBase & s) const = 0;
-	};
+	class DynamicObject;
 
 	class Dynamics
 	{
@@ -109,32 +27,16 @@ namespace Grafkit::Serializer
 		~Dynamics() = default;
 
 		typedef std::function<DynamicObject *()> FactoryFunction;
-		template <class T> static void Load(SerializerBase & s, T *& obj);
-		template <class T> static void Store(const SerializerBase & s, T * const & obj);
+		template <class Serializer, class T> static void Load(const Serializer & s, T & obj);
+		template <class Serializer, class T> static void Store(Serializer & s, T const & obj);
 
-		template <class T> static void Load(SerializerBase & ar, std::shared_ptr<T> & obj)
-		{
-			T * pT = nullptr;
-			Load(ar, pT);
-			obj = pT;
-		}
-		template <class T> static void Store(const SerializerBase & ar, const std::shared_ptr<T> & obj) { Store(ar, obj.get()); }
-
-		template <class T> static void Load(SerializerBase & ar, std::unique_ptr<T> & obj)
-		{
-			T * pT = nullptr;
-			Load(ar, pT);
-			obj = pT;
-		}
-		template <class T> static void Store(const SerializerBase & ar, const std::unique_ptr<T> & obj) { Store(ar, obj.get()); }
+		DynamicObject * Create(const char * className) const;
 
 		static Dynamics & Instance()
 		{
-			static Dynamics instance;
+			static Dynamics instance{};
 			return instance;
 		}
-
-		DynamicObject * Create(const char * className) const;
 
 	protected:
 		void AddCloneable(const char * const & className, const FactoryFunction & factory) { mFactories[className] = factory; }
@@ -156,56 +58,110 @@ namespace Grafkit::Serializer
 		};
 	};
 
-	template <class T> void Dynamics::Load(SerializerBase & s, T *& obj)
+#define DECL_DYNAMIC_IO_VIRTUAL_EX_(SERIALIZER_CLAZZ, ...)                                                                                                     \
+	virtual void _DynamicsInvokeSerializationLoad(const SERIALIZER_CLAZZ & s) = 0;                                                                             \
+	virtual void _DynamicsInvokeSerializationStore(SERIALIZER_CLAZZ & s) const = 0;                                                                            \
+	__VA_ARGS__
+
+#define DECL_DYNAMIC_IO_VIRTUAL(...) REFL_DETAIL_FOR_EACH(DECL_DYNAMIC_IO_VIRTUAL_EX_, __VA_ARGS__)
+
+	class DynamicObject
 	{
-		std::string clazzName;
+		friend class Dynamics;
 
-		s >> clazzName;
+	public:
+		virtual ~DynamicObject() = default;
 
-		if (clazzName.empty())
+	private:
+		friend class Dynamics;
+		virtual std::string_view _DynamicsGetClazzName() = 0;
+		virtual Utils::Checksum _DynamicsGetClazzChecksum() = 0;
+
+		DECL_DYNAMIC_IO_VIRTUAL(GK_SERIALIZER_ADAPTER_LIST)
+	};
+
+#undef DECL_DYNAMIC_IO_VIRTUAL_EX_
+#undef DECL_DYNAMIC_IO_VIRTUAL
+
+	template <class Serializer, class T> void Dynamics::Load(const Serializer & s, T & obj)
+	{
+		static_assert(Traits::is_pointer_like_v<T>);
+
+		if constexpr (Traits::is_shared_ptr_v<T> || Traits::is_unique_ptr_v<T>)
 		{
-			obj = nullptr;
+			using PointerType = typename T::element_type *;
+			PointerType p = nullptr;
+			Load<Serializer, PointerType>(s, p);
+
+			obj.reset(p);
 		}
 		else
 		{
-			DynamicObject * const dynamicObj = Instance().Create(clazzName.c_str());
-			T * const typedObj = dynamic_cast<T *>(dynamicObj);
 
-			if (!typedObj || !dynamicObj)
+			std::string clazzName;
+
+			s >> clazzName;
+
+			if (clazzName.empty())
 			{
-				throw std::runtime_error("Cannot instantiate class: Given <T> is not Serializable or defined in dynamics");
+				obj = nullptr;
 			}
-
-			Utils::Checksum::ChecksumType checksum;
-			s >> checksum;
-
-			if (checksum != typedObj->obj->_DynamicsGetClazzChecksum().value())
+			else
 			{
-				throw std::runtime_error("Checksum mismatch");
-			}
+				DynamicObject * const dynamicObj = Instance().Create(clazzName.c_str());
 
-			// static_assert(Traits::has_dynamics_invoke_serialization_read_v<T>);
-			typedObj->_DynamicsInvokeSerializationRead(s);
-			obj = typedObj;
+				if (!dynamic_cast<T>(dynamicObj))
+				{
+					throw std::runtime_error("Cannot instantiate class: Given <T> is not Serializable or defined in dynamics");
+				}
+
+				Utils::Checksum::ChecksumType checksum;
+				s >> checksum;
+
+				if (checksum != dynamicObj->_DynamicsGetClazzChecksum().value())
+				{
+					throw std::runtime_error("Checksum mismatch");
+				}
+
+				dynamicObj->_DynamicsInvokeSerializationLoad(s);
+				obj = dynamic_cast<T>(dynamicObj);
+			}
 		}
 	}
 
-	template <class T> void Dynamics::Store(const SerializerBase & s, T * const & obj)
+	template <class Serializer, class T> void Dynamics::Store(Serializer & s, T const & obj)
 	{
-		if (obj == nullptr)
+		static_assert(Traits::is_pointer_like_v<T>);
+
+		if constexpr (Traits::is_shared_ptr_v<T> || Traits::is_unique_ptr_v<T>)
 		{
-			s << 0;
+			using PointerType = typename T::element_type *;
+			PointerType p = obj.get();
+			Store<Serializer, PointerType>(s, p);
 		}
 		else
 		{
-			// static_assert(Traits::has_dynamics_invoke_serialization_write_v<T>);
 
-			const auto clazzName = obj->_DynamicsGetClazzName();
-			const auto clazzChecksum = obj->_DynamicsGetClazzChecksum().value();
+			if (obj == nullptr)
+			{
+				s << std::string();
+			}
+			else
+			{
+				DynamicObject * const dynamicObj = dynamic_cast<DynamicObject *>(obj);
 
-			s << clazzName << clazzChecksum;
+				if (!dynamicObj)
+				{
+					throw std::runtime_error("Cannot invoke store for class: Given <T> is not Serializable or defined in dynamics");
+				}
 
-			obj->_DynamicsInvokeSerializationWrite(s, obj);
+				const auto clazzName = std::string(dynamicObj->_DynamicsGetClazzName().data());
+				const auto clazzChecksum = dynamicObj->_DynamicsGetClazzChecksum().value();
+
+				s << clazzName << clazzChecksum;
+
+				dynamicObj->_DynamicsInvokeSerializationStore(s);
+			}
 		}
 	}
 
@@ -214,15 +170,22 @@ namespace Grafkit::Serializer
 		const auto it = mFactories.find(std::string(className));
 		return it != mFactories.end() ? it->second() : nullptr;
 	}
+
 } // namespace Grafkit::Serializer
+
+#define DECL_DYNAMIC_IO_EX_(SERIALIZER_CLAZZ, ...)                                                                                                             \
+	void _DynamicsInvokeSerializationLoad(const SERIALIZER_CLAZZ & s) override { s >> *this; }                                                                 \
+	void _DynamicsInvokeSerializationStore(SERIALIZER_CLAZZ & s) const override { s << *this; }                                                                \
+	__VA_ARGS__
+
+#define DECL_DYNAMIC_IO(...) REFL_DETAIL_FOR_EACH(DECL_DYNAMIC_IO_EX_, __VA_ARGS__)
 
 #define DYNAMICS_DECL(DYNAMIC_CLASS)                                                                                                                           \
 private:                                                                                                                                                       \
 	static Grafkit::Serializer::Dynamics::AddFactory<DYNAMIC_CLASS> _dynamicsAddFactory;                                                                       \
 	std::string_view DYNAMIC_CLASS::_DynamicsGetClazzName();                                                                                                   \
 	Grafkit::Utils::Checksum _DynamicsGetClazzChecksum() override;                                                                                             \
-	void _DynamicsInvokeSerializationRead(const Grafkit::Serializer::SerializerBase & s) override;                                                             \
-	void _DynamicsInvokeSerializationWrite(Grafkit::Serializer::SerializerBase & s) const override;
+	DECL_DYNAMIC_IO(GK_SERIALIZER_ADAPTER_LIST)
 
 #define DYNAMICS_IMPL(DYNAMIC_CLASS)                                                                                                                           \
 	Grafkit::Serializer::Dynamics::AddFactory<DYNAMIC_CLASS> DYNAMIC_CLASS## ::_dynamicsAddFactory(refl::type_descriptor<DYNAMIC_CLASS>::name.data);           \
@@ -233,8 +196,4 @@ private:                                                                        
 		return std::string_view(TypeDescriptor::name.data);                                                                                                    \
 	}                                                                                                                                                          \
                                                                                                                                                                \
-	Grafkit::Utils::Checksum DYNAMIC_CLASS::_DynamicsGetClazzChecksum() { return Grafkit::Utils::Signature::CalcChecksum<DYNAMIC_CLASS>(); }                   \
-                                                                                                                                                               \
-	void DYNAMIC_CLASS::_DynamicsInvokeSerializationRead(const Grafkit::Serializer::SerializerBase & s) { s >> *this; }                                        \
-                                                                                                                                                               \
-	void DYNAMIC_CLASS::_DynamicsInvokeSerializationWrite(Grafkit::Serializer::SerializerBase & s) const { s << *this; }
+	Grafkit::Utils::Checksum DYNAMIC_CLASS::_DynamicsGetClazzChecksum() { return Grafkit::Utils::Signature::CalcChecksum<DYNAMIC_CLASS>(); }

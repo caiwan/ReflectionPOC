@@ -85,7 +85,7 @@ DYNAMICS_IMPL(DummyB)
 TEST(Dynamics, DynamicsStore)
 {
 	const auto & dynamics = Grafkit::Serializer::Dynamics::Instance();
-	ASSERT_TRUE(dynamic_cast < DummyClass*>( dynamics.Create("DummyClass")));
+	ASSERT_TRUE(dynamic_cast<DummyClass *>(dynamics.Create("DummyClass")));
 	ASSERT_TRUE(dynamic_cast<DummyClassInherited *>(dynamics.Create("DummyClassInherited")));
 	ASSERT_TRUE(dynamic_cast<DummyB *>(dynamics.Create("DummyB")));
 	ASSERT_TRUE(dynamic_cast<DummyA *>(dynamics.Create("DummyA")));
@@ -94,6 +94,13 @@ TEST(Dynamics, DynamicsStore)
 
 // Serialize dynamic classes
 
-// Does not work
-//static_assert(Grafkit::Traits::has_dynamics_invoke_serialization_read_v<DummyClass>);
-//static_assert(Grafkit::Traits::has_dynamics_invoke_serialization_write_v<DummyClass>);
+class B
+{
+public:
+	virtual void b() = 0;
+	virtual void bc() const = 0;
+};
+
+class C : public B
+{
+};

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <type_traits>
 //
 #include <refl.h>
@@ -206,6 +207,73 @@ namespace Grafkit
 		template <typename T> static constexpr bool is_pointer_like_v = is_pointer_like<T>::value;
 
 		/**
+		 * https://stackoverflow.com/questions/34047732/convert-member-function-pointer-to-ordinary-function-pointer
+		 * https://en.cppreference.com/w/cpp/utility/functional/mem_fn
+		 * Gets the second agument of cdecl fnptr, which is the first argument to be taken after (const &this)
+		 */
+
+		// template<typename F> using FirstArgumentType = decltype(std::mem_fn(F{}))::second_argument_type;
+		template <typename D> struct FirstArgumentTypeFromDescriptor
+		{
+			typedef typename decltype(std::mem_fn(D::pointer))::second_argument_type Type;
+		};
+
+		template <typename D> using FirstArgumentTypeFromDescriptorT = typename FirstArgumentTypeFromDescriptor<D>::Type;
+
+		// Const-less setter-compatible type. Use this
+		template <typename D> using SetterTypeFromDescriptor = std::decay_t<FirstArgumentTypeFromDescriptorT<D>>;
+
+		/**
+		 *
+		 */
+
+		//// Trait version of refl::descriptr::is_readable and is_writable
+		//namespace Detail
+		//{
+		//	template <typename Descriptor> using IsMemberProperty = std::conjunction<refl::trait::is_member<Descriptor>, refl::trait::is_property<Descriptor>>;
+
+		//	template <typename Descriptor> using IsReadInvocable = std::is_invocable<Descriptor, const typename Descriptor::declaring_type &>;
+		//	template <typename Descriptor>
+		//	using IsWriteInvocable = std::is_invocable<Descriptor, const typename Descriptor::declaring_type &, refl::descriptor::detail::placeholder>;
+
+		//	template <typename Descriptor>
+		//	using IsReturnTypeNotVoid = std::negate<std::is_void<typename Descriptor::template return_type<const typename Descriptor::declaring_type &>>>;
+
+		//	template <typename Descriptor>
+		//	using IsReturnTypeNotConst = std::negate<std::is_const<typename refl::trait::remove_qualifiers_t<Descriptor>::value_type>>;
+		//} // namespace Detail
+
+		//// readable
+		//template <typename Descriptor>
+		//using IsReadable = std::conjunction<Detail::IsMemberProperty<Descriptor>, Detail::IsReadInvocable<Descriptor>, Detail::IsReturnTypeNotVoid<Descriptor>>;
+
+		//// writable
+		//template <typename Descriptor>
+		//using IsWritable = std::conjunction<Detail::IsMemberProperty<Descriptor>,
+		//	std::disjunction<Detail::IsWriteInvocable<Descriptor>, Detail::IsReturnTypeNotConst<Descriptor>>>;
+
+		///**
+		// *
+		// */
+
+		//template <typename Descriptor, typename Attribute> using HasAttribute = refl::trait::contains_base<Attribute, typename Descriptor::attribute_types>;
+
+		//template <typename Descriptor>
+		//using IsSerializable = std::conjunction<HasAttribute<Descriptor, Attributes::Serializable>,
+		//	std::disjunction<refl::trait::is_field<Descriptor>, refl::trait::is_property<Descriptor>>>;
+
+		//// field
+		//template <typename Descriptor> using IsSerializableField = std::conjunction<IsSerializable<Descriptor>, refl::trait::is_field<Descriptor>>;
+
+		//// getter
+		//template <typename Descriptor>
+		//using IsSerializableGetter = std::conjunction<IsSerializable<Descriptor>, refl::trait::is_function<Descriptor>, IsReadable<Descriptor>>;
+
+		//// setter
+		//template <typename Descriptor>
+		//using IsSerializableSetter = std::conjunction<IsSerializable<Descriptor>, refl::trait::is_function<Descriptor>, IsWritable<Descriptor>>;
+
+		/**
 		 *
 		 */
 
@@ -221,10 +289,34 @@ namespace Grafkit
 			return is_serializable(t) && refl::descriptor::is_function(t) && refl::descriptor::is_readable(t);
 		}
 
+		template <typename T> static constexpr bool is_serializable_readable(const T & t)
+		{
+			return is_serializable(t) && refl::descriptor::is_readable(t); // && (is_serializable_getter(t) || is_serializable_field(t));
+		}
+
 		template <typename T> static constexpr bool is_serializable_setter(const T & t)
 		{
 			return is_serializable(t) && refl::descriptor::is_function(t) && refl::descriptor::is_writable(t);
 		}
+
+		template <typename T> static constexpr bool is_serializable_writable(const T & t)
+		{
+			return is_serializable(t) && refl::descriptor::is_writable(t); //&& (is_serializable_setter(t) || is_serializable_field(t));
+		}
+
+		/**
+		 *
+		 */
+
+		constexpr size_t choiceCountMax = 99;
+
+		template <size_t I> struct Choice : Choice<I + 1>
+		{
+		};
+
+		template <> struct Choice<choiceCountMax>
+		{
+		};
 
 	} // namespace Traits
 

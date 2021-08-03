@@ -1,29 +1,21 @@
 #pragma once
 
-namespace Grafkit::Serializer
+namespace Grafkit
 {
-	class SerializerBase
+	namespace Serializer
 	{
-	public:
-		template <class T> SerializerBase & operator<<(const T & value) { return *this; }
-		template <class T> const SerializerBase & operator>>(T & value) const { return *this; }
-	};
 
-	template <typename Base> class SerializerMixin : public SerializerBase, public Base
-	{
-	public:
-		using Base::Base;
+		class BinaryAdapter;
+		class JsonAdapter;
 
-		template <class T> SerializerMixin & operator<<(const T & value)
+		class SerializerBase
 		{
-			Base::Write(value);
-			return *this;
-		}
+		public:
+			template <class T> SerializerBase & operator<<(const T & value) { return *this; }
+			template <class T> const SerializerBase & operator>>(T & value) const { return *this; }
+		};
 
-		template <class T> const SerializerMixin & operator>>(T & value) const
-		{
-			Base::Read(value);
-			return *this;
-		}
-	};
-}
+	} // namespace Serializer
+} // namespace Grafkit
+
+#define GK_SERIALIZER_ADAPTER_LIST Grafkit::Serializer::BinaryAdapter, Grafkit::Serializer::JsonAdapter

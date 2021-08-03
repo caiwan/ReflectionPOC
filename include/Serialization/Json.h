@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <refl.h>
 //
+#include <Serialization/SerializerBase.h>
 #include <Serialization/Signature.h>
 #include <Serialization/Stream.h>
 
@@ -14,7 +15,7 @@ namespace Grafkit
 
 	namespace Serializer
 	{
-		class JsonAdapter
+		class JsonAdapter : public SerializerBase
 		{
 		public:
 			explicit JsonAdapter(Json & json) : json(json) {}
@@ -23,6 +24,17 @@ namespace Grafkit
 			static Json ParseJson(IStream & stream);
 
 			static void DumpJson(IStream & stream, const Json & json);
+
+			template <class T> JsonAdapter & operator<<(const T & value)
+			{
+				Write(value);
+				return *this;
+			}
+			template <class T> const JsonAdapter & operator>>(T & value) const
+			{
+				Read(value);
+				return *this;
+			}
 
 		protected:
 			template <typename Type> void Write(const Type & value) { Write(value, json); }
@@ -53,7 +65,8 @@ namespace Grafkit
 				// ---
 				else if constexpr (Traits::is_pointer_like_v<Type>)
 				{
-					Dynamics::Instance().Store(value);
+					JsonAdapter tmp(jsonNode);
+					Dynamics::Instance().Store(tmp, value);
 				}
 
 				// --- STL-like container support
@@ -77,12 +90,12 @@ namespace Grafkit
 				else if constexpr (refl::trait::is_reflectable_v<Type>)
 				{
 
-					const auto checksum = Utils::Checksum();
+					const auto checksum = Utils::Signature::CalcChecksum<Type>();
 					jsonNode = {};
 					jsonNode["_checksum"] = checksum.value();
 
 					constexpr auto members =
-						refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+						refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_readable(member); });
 					refl::util::for_each(members, [&](auto member) {
 						if constexpr (Traits::is_serializable_field(member))
 						{
@@ -143,7 +156,8 @@ namespace Grafkit
 				// ---
 				else if constexpr (Traits::is_pointer_like_v<Type>)
 				{
-					Dynamics::Instance().Load(value);
+					JsonAdapter tmp(const_cast<Json &>(jsonNode));
+					Dynamics::Instance().Load(tmp, value);
 				}
 
 				// STL-like container support
@@ -194,13 +208,13 @@ namespace Grafkit
 				// -- The rest of the stuff which has reflection data attached
 				else if constexpr (refl::trait::is_reflectable_v<Type>)
 				{
-					const auto checksum = Utils::Checksum();
+					const auto checksum = Utils::Signature::CalcChecksum<Type>();
 					const Utils::Checksum readChecksum(jsonNode["_checksum"].get<Utils::Checksum::ChecksumType>());
 
 					if (checksum != readChecksum) throw std::runtime_error("Checksum does not match");
 
 					constexpr auto members =
-						refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+						refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_writable(member); });
 
 					refl::util::for_each(members, [&](auto member) {
 						typedef decltype(member) DescriptorType;
@@ -212,9 +226,10 @@ namespace Grafkit
 						}
 						else if constexpr (Traits::is_serializable_setter(member))
 						{
-							DescriptorType::return_type<Type> memberValue;
+							using SetterType = Traits::SetterTypeFromDescriptor<DescriptorType>;
+							SetterType memberValue{};
 							Read(memberValue, jsonNode[refl::descriptor::get_display_name(member)]);
-							member(value, memberValue);
+							member(value, std::move(memberValue));
 						}
 					});
 				}

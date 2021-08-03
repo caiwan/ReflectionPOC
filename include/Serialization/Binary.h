@@ -5,15 +5,15 @@
 #include <refl.h>
 //
 #include <Serialization/Crc32.h>
-//
 #include <Serialization/Dynamics.h>
 #include <Serialization/EndianSwapper.h>
+#include <Serialization/SerializerBase.h>
 #include <Serialization/Signature.h>
 #include <Serialization/Stream.h>
 
 namespace Grafkit::Serializer
 {
-	class BinaryAdapter
+	class BinaryAdapter : public SerializerBase
 	{
 	public:
 		using SizeType = uint64_t;
@@ -24,6 +24,17 @@ namespace Grafkit::Serializer
 
 		explicit BinaryAdapter(IStream & stream) : stream(stream) {}
 		explicit BinaryAdapter(IStream && stream) : stream(stream) {}
+
+		template <class T> BinaryAdapter & operator<<(const T & value)
+		{
+			Write(value);
+			return *this;
+		}
+		template <class T> const BinaryAdapter & operator>>(T & value) const
+		{
+			Read(value);
+			return *this;
+		}
 
 		// https://github.com/veselink1/refl-cpp/issues/29
 
@@ -49,7 +60,7 @@ namespace Grafkit::Serializer
 			// ---
 			else if constexpr (Traits::is_pointer_like_v<Type>)
 			{
-				Dynamics::Instance().Store(value);
+				Dynamics::Instance().Store(*this, value);
 			}
 
 			// --- Wired-in std::string (and any other string-based type) support
@@ -86,7 +97,8 @@ namespace Grafkit::Serializer
 				constexpr auto checksum = Utils::Signature::CalcChecksum<Type>();
 				Write(checksum.value());
 
-				constexpr auto members = refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+				constexpr auto members =
+					refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_readable(member); });
 				refl::util::for_each(members, [&](auto member) {
 					const auto & memberValue = member(value);
 					Write(memberValue);
@@ -119,6 +131,7 @@ namespace Grafkit::Serializer
 		template <typename Type> void Read(Type & value) const
 		{
 			assert(stream);
+
 			// ---
 			if constexpr (std::is_arithmetic_v<Type>)
 			{
@@ -138,7 +151,7 @@ namespace Grafkit::Serializer
 			// ---
 			else if constexpr (Traits::is_pointer_like_v<Type>)
 			{
-				Dynamics::Instance().Load(value);
+				Dynamics::Instance().Load(*this, value);
 			}
 
 			// -- Wired-in std::string support
@@ -150,19 +163,22 @@ namespace Grafkit::Serializer
 				SizeType length = 0;
 				Read(length);
 
-				value.clear();
-				CharType buffer[StringBufferSize];
-				SizeType toRead = length * sizeof(CharType);
-				while (toRead != 0)
+				if (length > 0)
 				{
-					const auto readLength = std::min(toRead, static_cast<SizeType>(sizeof(buffer)));
-					stream.Read(buffer, readLength);
+					value.clear();
+					CharType buffer[StringBufferSize];
+					SizeType toRead = length * sizeof(CharType);
+					while (toRead != 0)
+					{
+						const auto readLength = std::min(toRead, static_cast<SizeType>(sizeof(buffer)));
+						stream.Read(buffer, readLength);
 
-					value += std::string(buffer, readLength);
-					toRead -= readLength;
+						value += std::string(buffer, readLength);
+						toRead -= readLength;
+					}
+					// remove  trailing zero we stored, but don't need
+					value.pop_back();
 				}
-				// remove  trailing zero we stored, but don't need
-				value.pop_back();
 			}
 
 			// STL-like container support
@@ -223,9 +239,10 @@ namespace Grafkit::Serializer
 				{
 					throw std::runtime_error("Checksum does not match");
 				}
-				constexpr auto members = refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable(member); });
+				constexpr auto members =
+					refl::util::filter(refl::type_descriptor<Type>::members, [](auto member) { return Traits::is_serializable_writable(member); });
 				refl::util::for_each(members, [&](auto member) {
-					typedef decltype(member) DescriptorType;
+					using DescriptorType = decltype(member);
 
 					if constexpr (Traits::is_serializable_field(member))
 					{
@@ -234,9 +251,10 @@ namespace Grafkit::Serializer
 					}
 					else if constexpr (Traits::is_serializable_setter(member))
 					{
-						DescriptorType::return_type<Type> memberValue;
+						using SetterType = Traits::SetterTypeFromDescriptor<DescriptorType>;
+						SetterType memberValue;
 						Read(memberValue);
-						member(value, memberValue);
+						member(value, std::move(memberValue));
 					}
 				});
 			}

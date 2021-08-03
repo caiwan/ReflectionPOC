@@ -155,7 +155,7 @@ template <typename Type> std::string ReferenceCalcSignature()
 		if constexpr (refl::descriptor::is_field(member))
 		{
 			using ValueType = DescriptorType::value_type;
-			ret.append(Grafkit::Utils::Signature::type_name<ValueType>::value.c_str());
+			ret.append(Grafkit::Utils::Signature::FindTypeName<ValueType>::value.c_str());
 			ret.append(" ");
 			ret.append(member.name.c_str());
 			ret.append("; ");
@@ -170,7 +170,7 @@ template <typename Type> std::string ReferenceCalcSignature()
 		{
 			using ReturnType = DescriptorType::return_type<Type>;
 
-			ret.append(Grafkit::Utils::Signature::type_name<ReturnType>::value.c_str());
+			ret.append(Grafkit::Utils::Signature::FindTypeName<ReturnType>::value.c_str());
 			ret.append(" ");
 			ret.append(refl::descriptor::get_display_name(member));
 			ret.append("; ");
